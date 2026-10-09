@@ -15,6 +15,7 @@ package main
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -30,13 +31,41 @@ const (
 	addrNum3 = addrD + `+\s*番地(?:\s*の?\s*` + addrD + `+)?`
 	addrNum4 = addrD + `+\s*番\s*` + addrD + `+\s*号`
 	addrNum  = `(?:` + addrNum2 + `|` + addrNum4 + `|` + addrNum3 + `|` + addrNum1 + `)`
+	// 市区町村名：漢字（とヶ・ケ）だけの名前
+	addrMuniHan = `[\p{Han}ヶケ]{1,5}[市区町村郡]`
+	// 都道府県名のすぐ後ろなら、かなを含む名前も市区町村とみなす（一覧にない名前・架空の名前も）。
+	// 都道府県名のない「のみの市」のような語は、ここには当たらない
+	addrMuniPrefKana = `[\p{Han}\p{Hiragana}\p{Katakana}ーヶケノ]{1,8}?[市区町村郡]`
+	// 町名・字名
+	addrTown = `[\p{Han}\p{Katakana}ヶケノの]{0,8}`
 )
+
+// kanaMunicipalities: ひらがな・カタカナを含む実在の市区町村名（都道府県名がなくても市区町村とみなす）。
+// 「つくばみらい市」が「つくば市」より先に当たるよう、長い名前から並べる（addrKanaMuni で並べ替える）
+var kanaMunicipalities = strings.Fields(`
+	つがる市 むつ市 おいらせ町 にかほ市 いわき市
+	ひたちなか市 つくば市 かすみがうら市 つくばみらい市 さくら市 みどり市 みなかみ町
+	さいたま市 ふじみ野市 ときがわ町 いすみ市 あきる野市
+	かほく市 あわら市 おおい町 南アルプス市 伊豆の国市
+	みよし市 あま市 いなべ市 たつの市 南あわじ市 かつらぎ町 みなべ町
+	さぬき市 東かがわ市 まんのう町 つるぎ町 東みよし町 いの町
+	うきは市 みやま市 みやこ町 みやき町 あさぎり町 えびの市
+	いちき串木野市 南さつま市 さつま町 うるま市
+	ニセコ町 せたな町 むかわ町 えりも町 新ひだか町 上ノ国町
+`)
+
+var addrKanaMuni = func() string {
+	names := append([]string(nil), kanaMunicipalities...)
+	sort.SliceStable(names, func(i, j int) bool { return utf8.RuneCountInString(names[i]) > utf8.RuneCountInString(names[j]) })
+	return `(?:` + strings.Join(names, `|`) + `)`
+}()
 
 var (
 	// 前の版（改善4まで）の住所の形。除外の照合にだけ使う（前の版の候補語で登録された除外を効かせるため）
 	reAddrOld = regexp.MustCompile(`[\p{Han}ヶケ]{1,5}[市区町村郡][\p{Han}\p{Katakana}ヶケノの]{0,8}[0-9０-９]+(?:[-－ー‐−の][0-9０-９]+){1,3}`)
-	// 今の住所の形（都道府県から・丁目などの番地も）
-	reAddr = regexp.MustCompile(`(?:` + addrPref + `)?[\p{Han}ヶケ]{1,5}[市区町村郡][\p{Han}\p{Katakana}ヶケノの]{0,8}` + addrNum)
+	// 今の住所の形（都道府県から・丁目などの番地も）。
+	// 市区町村名は、①都道府県＋かなを含む名前、②（都道府県）＋かなを含む実在の名前、③（都道府県）＋漢字の名前 の順に見る
+	reAddr = regexp.MustCompile(`(?:` + addrPref + addrMuniPrefKana + `|(?:` + addrPref + `)?(?:` + addrKanaMuni + `|` + addrMuniHan + `))` + addrTown + addrNum)
 	// 市区町村名のない形（建物名・部屋番号が続くときだけ保留）
 	reAddrNC   = regexp.MustCompile(`[\p{Han}ヶケ]{2,8}` + addrNum)
 	reHanOnly  = regexp.MustCompile(`^[\p{Han}ヶケ々]{1,6}$`)
