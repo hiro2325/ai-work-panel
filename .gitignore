@@ -1,0 +1,54 @@
+# ---- 個人情報が入るフォルダ（中身は上げない。.gitkeep だけ上げてフォルダの形を残す）
+/kadai_masking/**
+/kadai_ai/**
+/kadai_server/**
+!/kadai_masking/**/
+!/kadai_ai/**/
+!/kadai_server/**/
+!/kadai_masking/**/.gitkeep
+!/kadai_ai/**/.gitkeep
+!/kadai_server/**/.gitkeep
+
+# ---- 公開しないメモ
+/_memo/
+
+# ---- 組み立てたもの
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/bin/
+/dist/
+
+# ---- Go
+go.work
+go.work.sum
+coverage.*
+*.coverprofile
+
+# ---- 作業中に一時的にできるファイル
+*.part
+*.tmp
+*.bak
+*.log
+.env
+.env.*
+
+# ---- Office の作業中ファイル（開いている間だけできる）
+~$*
+
+# ---- Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ---- エディタ
+.vscode/
+.idea/
+*.swp

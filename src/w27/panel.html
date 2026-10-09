@@ -1,0 +1,1995 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI作業パネル</title>
+<style>
+:root{
+  --bg:#f4f6f5; --card:#fff; --ink:#1f2a28; --sub:#5b6966; --line:#dfe5e3;
+  --main:#1f7a6d; --main-soft:#e3f2ef; --warn:#b76a00; --warn-soft:#fff2dc;
+  --ng:#b3261e; --ng-soft:#fde8e6; --ok:#2e7d32; --ok-soft:#e6f4e7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Yu Gothic UI","Meiryo","Noto Sans CJK JP","Noto Sans JP",sans-serif;font-size:17px;line-height:1.6}
+header{background:var(--main);color:#fff;padding:14px 28px;display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap}
+header h1{font-size:21px;margin:0;font-weight:700}
+.badge-local{margin-left:auto;background:rgba(255,255,255,.18);border-radius:999px;padding:4px 14px;font-size:14px}
+main{max-width:980px;margin:0 auto;padding:24px 20px 48px}
+.crumb{color:var(--sub);font-size:14px;margin-bottom:10px}
+.crumb a{color:var(--main);text-decoration:none}
+h2{font-size:22px;margin:4px 0 16px}
+.lead{color:var(--sub);margin:-8px 0 20px}
+/* トップ */
+.steps{display:grid;gap:12px}
+.step{display:grid;grid-template-columns:56px 1fr auto;align-items:center;gap:16px;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;cursor:pointer}
+.step:hover{border-color:var(--main)}
+.num{width:44px;height:44px;border-radius:50%;background:var(--main-soft);color:var(--main);
+  display:grid;place-items:center;font-weight:700;font-size:20px}
+.step b{font-size:19px}
+.step .desc{color:var(--sub);font-size:14px}
+.cnt{min-width:84px;text-align:center;border-radius:999px;padding:6px 14px;font-weight:700;font-size:15px;background:#eef1f0;color:var(--sub)}
+.cnt.hot{background:var(--main);color:#fff}
+.cnt.warn{background:var(--warn);color:#fff}
+.group-label{font-size:13px;color:var(--sub);margin:22px 0 8px;letter-spacing:.05em}
+.others{display:flex;flex-wrap:wrap;gap:8px}
+.others span{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:14px;color:var(--sub)}
+/* ボタン */
+.btn{display:inline-block;text-decoration:none;border:0;border-radius:10px;padding:12px 26px;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn.primary{background:var(--main);color:#fff}
+.btn.light{background:var(--card);color:var(--main);border:1.5px solid var(--main)}
+.btn.small{padding:6px 12px;font-size:14px;border-radius:8px}
+.btn[disabled]{background:#c9d2cf;color:#fff;cursor:not-allowed}
+.bar{display:flex;gap:12px;justify-content:flex-end;align-items:center;margin-top:20px}
+/* 資料を入れる */
+.drop{border:2.5px dashed var(--main);border-radius:16px;background:var(--main-soft);padding:44px 20px;text-align:center}
+.drop .big{font-size:21px;font-weight:700;color:var(--main)}
+.drop .sm{color:var(--sub);font-size:14px}
+.files{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-top:16px}
+.files div{display:flex;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--line)}
+.files div:first-child{border-top:0}
+.kind{font-size:13px;color:var(--sub)}
+.flist-h{font-size:16px;margin:18px 0 0}
+.files .fn{overflow-wrap:anywhere;min-width:0}
+.files .fr{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.muf{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;background:var(--card);border-radius:8px;padding:8px 10px;margin-top:8px}
+.muf .fn{overflow-wrap:anywhere;min-width:0;font-weight:600}
+.muf .us{font-size:14px;overflow-wrap:anywhere;min-width:0}
+.muf.bad{outline:2px solid var(--ng)}
+/* 確認 */
+.file{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
+.fhead{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.fhead b{font-size:17px}
+.st{margin-left:auto;border-radius:999px;padding:3px 12px;font-size:14px;font-weight:700}
+.st.ok{background:var(--ok-soft);color:var(--ok)}
+.st.hold{background:var(--warn-soft);color:var(--warn)}
+.fbody{padding:14px 18px;font-size:15.5px}
+.rep{background:var(--ok-soft);color:var(--ok);border-radius:5px;padding:0 4px;font-weight:700}
+.rep small{font-weight:400;color:var(--sub)}
+.sus{background:var(--warn-soft);color:var(--warn);border-radius:5px;padding:0 4px;font-weight:700;outline:2px solid var(--warn)}
+.ask{margin-top:12px;background:var(--warn-soft);border-radius:10px;padding:12px 14px}
+.ask .q{font-weight:700;margin-bottom:8px}
+.ask .row{display:flex;gap:8px;flex-wrap:wrap}
+.legend{display:flex;gap:18px;font-size:14px;color:var(--sub);margin-bottom:14px}
+.send .form{grid-template-columns:minmax(120px,max-content) 1fr}
+@media (max-width:640px){.send .form{grid-template-columns:1fr}}
+.send .form .nw{white-space:nowrap}
+.send{background:var(--card);border:2px solid var(--main);border-radius:14px;padding:16px 18px;margin-top:18px}
+.send h3{margin:0 0 10px;font-size:18px}
+.form{display:grid;grid-template-columns:120px 1fr;gap:10px 14px;align-items:center}
+select,input{font-family:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.note{font-size:13px;color:var(--sub)}
+/* 合格品 */
+.item{display:grid;grid-template-columns:1fr auto;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px}
+.item .t{font-size:18px;font-weight:700}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.chip{font-size:13px;border-radius:999px;padding:2px 10px;background:#eef1f0;color:var(--sub)}
+.chip.w{background:var(--warn-soft);color:var(--warn)}
+.chip.g{background:var(--ok-soft);color:var(--ok)}
+.page{display:none}.page.on{display:block}
+@media (max-width:640px){.step{grid-template-columns:44px 1fr}.cnt{grid-column:2}.form{grid-template-columns:1fr}}
+.step .desc,.item .files{overflow-wrap:anywhere}
+.msg{border-radius:10px;padding:12px 16px;margin:12px 0;font-size:15.5px}
+.msg.ok{background:var(--ok-soft);color:var(--ok)}
+.msg.ng{background:var(--ng-soft);color:var(--ng)}
+.msg.info{background:var(--main-soft);color:var(--ink)}
+.busy{position:fixed;inset:0;background:rgba(255,255,255,.75);display:none;place-items:center;z-index:9;font-size:19px;font-weight:700;color:var(--main)}
+.busy.on{display:grid}
+.spin{width:42px;height:42px;border:5px solid var(--main-soft);border-top-color:var(--main);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.drop.over{background:#cfe9e3}
+.others a{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:14px;color:var(--main);cursor:pointer;text-decoration:none}
+.ask input{min-width:220px}
+.added{color:var(--ok);font-weight:700}
+pre.memo{white-space:pre-wrap;background:#fafbfb;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:14.5px;max-height:320px;overflow:auto}
+.empty{color:var(--sub);background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:18px;text-align:center}
+.fbody .line{padding:2px 0;border-bottom:1px dotted #eef1f0}
+.x{background:none;border:1px solid var(--line);border-radius:8px;color:var(--ng);cursor:pointer;font-family:inherit;font-size:14px;padding:3px 10px}
+.x:hover{border-color:var(--ng)}
+details.reg{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-top:16px}
+details.reg summary{cursor:pointer;font-weight:700;color:var(--main)}
+.warnbox{background:var(--warn-soft);border-radius:10px;padding:10px 14px;margin:10px 0;font-size:15px}
+.copyline{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:17px;font-weight:700}
+/* そのほかのページ */
+.others a{display:inline-block}
+.top-back{display:inline-block;color:var(--main);text-decoration:none;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:14px}
+.card h3{margin:0 0 8px;font-size:18px}
+.tw{overflow-x:auto;max-width:100%}
+table.nt{border-collapse:collapse;width:100%;background:var(--card);font-size:15.5px}
+table.nt th,table.nt td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+table.nt th{background:#eef1f0;font-size:14px;color:var(--sub);font-weight:700}
+table.nt td.ops{white-space:nowrap;text-align:right}
+table.nt td.code{font-family:Consolas,monospace;font-size:14px;color:var(--main)}
+.hit-none{color:var(--sub);padding:12px}
+.search{width:100%;margin-bottom:10px}
+.editbox{border:2px solid var(--main);background:var(--main-soft)}
+.secondary{border-top:1px dashed var(--line);margin-top:24px;padding-top:12px}
+.secondary .note{margin-bottom:6px}
+.doc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 18px;overflow-wrap:anywhere}
+.doc h1{font-size:21px;margin:14px 0 8px}.doc h2{font-size:19px;margin:16px 0 8px;border-left:4px solid var(--main);padding-left:8px}.doc h3,.doc h4{font-size:17px;margin:14px 0 6px}
+.doc p{margin:6px 0}.doc ul,.doc ol{margin:6px 0;padding-left:1.4em}
+.doc table{border-collapse:collapse;margin:8px 0;font-size:15px}
+.doc th,.doc td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}
+.doc th{background:#eef1f0}
+.doc pre{white-space:pre-wrap;background:#fafbfb;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px}
+.doc code{background:#eef1f0;border-radius:4px;padding:0 4px;font-size:.92em}
+.doc .box,.doc .warn{background:#f4f6f8;border-radius:8px;padding:8px 12px;margin:8px 0}
+.doc .warn{background:var(--warn-soft)}
+.chip.n{background:var(--warn-soft);color:var(--warn)}
+textarea{font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;width:100%;min-height:260px;resize:vertical;background:#fff}
+.pendbar{position:sticky;top:0;z-index:5;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+#pendbar-bottom{position:static}
+.pendbar .pendnote{flex:1 1 240px;margin:0}
+.staffbox{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0}
+.staffbox .staffrow{display:block;padding:4px 0;border-bottom:1px dashed var(--line);overflow-wrap:anywhere}
+.howbox{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--accent,#c77);border-radius:10px;padding:10px 14px;margin:10px 0;line-height:1.7}
+.howbox .howname{font-weight:700;margin-top:4px}
+.ask.known{opacity:.75}
+.kaizen{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 18px 14px;margin-top:18px}
+.kaizen textarea{min-height:80px}
+.paste{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-top:18px}
+.paste h3{margin:0 0 8px;font-size:18px}
+.dirs .card summary{cursor:pointer}
+.orig-warn{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:8px;padding:10px 14px;margin-bottom:14px}
+@media (max-width:640px){
+  header{padding:12px 16px}
+  main{padding:18px 12px 40px}
+  table.nt thead{display:none}
+  table.nt,table.nt tbody,table.nt tr,table.nt td{display:block;width:100%}
+  table.nt tr{border-bottom:2px solid var(--line);padding:6px 0}
+  table.nt td{border:0;padding:3px 10px}
+  table.nt td[data-l]::before{content:attr(data-l)"：";color:var(--sub);font-size:13px}
+  table.nt td.ops{text-align:left;white-space:normal}
+  .bar{flex-wrap:wrap}
+  .item{grid-template-columns:1fr}
+  .ask input{min-width:0;width:100%}
+  .fhead{flex-wrap:wrap}
+}
+.opwrap{display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px}
+.opnote{font-size:12px;color:var(--sub);white-space:normal}
+.titlerow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.titlerow input{flex:1 1 220px;min-width:0}
+.voicebtn{white-space:nowrap}
+.hint{font-size:13px;color:var(--sub);margin-top:4px}
+.titlewarn{font-size:13.5px;color:var(--warn);margin-top:4px;font-weight:700}
+@media (max-width:640px){.opwrap{align-items:flex-start}}
+.when{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13.5px;color:var(--sub);margin-top:4px}
+.when b{color:var(--ink);font-weight:700}
+.donelist>div{align-items:center;gap:10px}
+.donelist .dn{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}
+.donelist .btn{white-space:nowrap;flex-shrink:0}
+/* 片づける */
+.btn.danger{background:var(--ng);color:#fff}
+.jobops{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.job .files{margin-top:8px}
+.clist{margin:6px 0 0;padding-left:1.2em}
+.clist li{overflow-wrap:anywhere;margin:3px 0}
+.clist details summary{cursor:pointer;color:var(--sub);font-size:14px}
+.clist .inner{font-size:13.5px;color:var(--sub);margin:4px 0 0;padding-left:1.2em}
+.cgroup h3{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.okbox{background:var(--ok-soft);color:var(--ok);border-radius:10px;padding:10px 14px;margin:10px 0;font-weight:700}
+.skipbox summary{cursor:pointer;font-weight:700;color:var(--warn)}
+.skipbox .sk{border-top:1px dashed var(--line);padding-top:8px;margin-top:8px;overflow-wrap:anywhere}
+.msg{white-space:pre-line;overflow-wrap:anywhere}
+@media (max-width:640px){.jobops{align-items:stretch}.cleanbar{flex-direction:column-reverse;align-items:stretch}.cleanbar .btn{width:100%}}
+/* 支援経過（改善4） */
+.paste.keika{border:2px solid var(--main)}
+.kbadge{display:inline-block;font-size:12px;background:var(--main-soft);color:var(--main);border-radius:999px;padding:1px 10px;margin-left:6px;vertical-align:middle}
+.kprev{white-space:pre-wrap;background:#fafbfb;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14.5px;overflow-wrap:anywhere;margin:6px 0 0}
+.kfiles div{overflow-wrap:anywhere}
+.donelist .kact{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+input[type=date]{min-width:0}
+/* 日付の欄と小さなカレンダー（改善5） */
+.datebox{position:relative;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:100%}
+.datebox input.dtext{width:9.5em;min-width:0}
+.datebox .calbtn{padding:6px 10px;line-height:1.2}
+.datebox .dlabel{font-size:13.5px;color:var(--sub)}
+.calpop{position:absolute;top:calc(100% + 4px);left:0;z-index:30;width:260px;max-width:calc(100vw - 32px);box-sizing:border-box;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.18);padding:8px}
+.calpop[hidden]{display:none}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;font-weight:700}
+.calhead button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;font-size:16px}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.calgrid .wd{font-size:12px;color:var(--sub)}
+.calgrid .wd.sun,.calgrid button.sun{color:#c0392b}.calgrid .wd.sat,.calgrid button.sat{color:#1f5fa8}
+.calgrid button{border:0;background:none;border-radius:6px;padding:5px 0;cursor:pointer;font-size:14px;min-width:0}
+.calgrid button:hover,.calgrid button:focus{background:var(--main-soft);outline:none}
+.calgrid button.today{box-shadow:inset 0 0 0 1px var(--main)}
+.calgrid button.sel{background:var(--main);color:#fff}
+.calgrid button:disabled{color:#bbb;cursor:default;background:none}
+.calfoot{display:flex;justify-content:space-between;margin-top:6px;gap:6px}
+.dupmark{display:inline-block;font-size:12px;background:var(--warn-soft,#fff3cd);color:var(--warn);border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:700}
+tr.duprow td{background:#fffaf0}
+/* 氏名一覧：マウスを乗せた行・直している行に色（改善24） */
+table.nt tbody tr[data-row]:hover td{background:color-mix(in srgb,var(--main-soft) 50%,#fff)}
+table.nt tbody tr.editing td,table.nt tbody tr.editing:hover td{background:var(--main-soft)}
+table.nt tbody tr.editing{outline:2px solid var(--main);outline-offset:-2px}
+.namebar{position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0 6px;box-shadow:0 6px 6px -6px rgba(0,0,0,.12)}
+.namebar .note{margin:0;background:var(--bg)}
+.kindchips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.kindchips button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:14px;cursor:pointer}
+.kindchips button:hover{border-color:var(--main)}
+.kindchips button.on{background:var(--main);border-color:var(--main);color:#fff;font-weight:700}
+#dupbox .duprows{max-height:340px;overflow:auto;border:1px solid var(--line,#ddd);border-radius:8px;padding:6px 10px;background:#fff;margin:8px 0}
+#dupbox label.dg{display:block;padding:6px 0;border-bottom:1px dashed #eee}
+#dupbox label.dg:last-child{border-bottom:none}
+#dupbox .dgn{font-weight:700}
+#dupbox .bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:min(92vw,720px);z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.18);margin:0}
+tr.editrow>td{background:var(--main-soft)}
+tr.editrow .editbox{margin:4px 0}
+@media (max-width:640px){.donelist>div{flex-wrap:wrap}.donelist .kact{justify-content:flex-start;width:100%}.donelist .kact .btn{white-space:normal}}
+/* 組織図（改善7） */
+.org{display:grid;justify-items:center;gap:0}
+.onode{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 18px;min-width:260px;max-width:520px;width:100%;text-align:center}
+.onode.boss{border-color:var(--main);background:var(--main-soft)}
+.onode .on{font-size:19px;font-weight:700}
+.onode .or{font-size:13px;color:var(--sub)}
+.vline{width:2px;height:22px;background:var(--main);opacity:.5}
+.ogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;align-items:start;width:100%;border-top:2px solid rgba(31,122,109,.5);padding-top:16px;margin-top:0}
+.ocard{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ocard.s-work{border-color:var(--main)}
+.ocard.s-wait{border-color:var(--warn)}
+.ocard.s-consult{border-color:var(--ng)}
+.ocard .oh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ocard .oh b{font-size:17px}
+.ostate{margin-left:auto;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700;background:#eef1f0;color:var(--sub);white-space:nowrap}
+.ostate.work{background:var(--main);color:#fff}
+.ostate.wait{background:var(--warn);color:#fff}
+.ostate.consult{background:var(--ng);color:#fff}
+.ostate.prep{background:#fff;border:1px dashed var(--sub)}
+.orow{font-size:14px;overflow-wrap:anywhere}
+.orow .k{color:var(--sub);font-size:12.5px;display:block}
+.ogroup{grid-column:1/-1;border:1.5px dashed rgba(31,122,109,.5);border-radius:16px;padding:10px 12px 12px}
+.ogroup>.gl{font-weight:700;color:var(--main);margin:0 0 8px 4px}
+.ogroup .ogrid{border-top:0;padding-top:0}
+.oitems{list-style:none;margin:4px 0 0;padding:0;font-size:13.5px}
+.oitems li{padding:4px 0;border-top:1px dotted var(--line);overflow-wrap:anywhere}
+.oitems li .d{color:var(--sub);font-size:12px}
+.oitems li.wait::before{content:"● ";color:var(--warn)}
+.oitems li.consult::before{content:"● ";color:var(--ng)}
+.oitems li.done::before{content:"✓ ";color:var(--ok)}
+.oitems li.keep::before{content:"▫ ";color:var(--sub)}
+.pipe{display:flex;gap:3px;margin-top:4px}
+.pipe span{flex:1;height:8px;border-radius:4px;background:#e4e9e7}
+.pipe span.past{background:#b9c4c1}
+.pipe span.act{background:var(--main)}
+.pipe span.now{background:var(--warn)}
+.pipe span.ng{background:var(--ng)}
+.pipet{display:flex;gap:3px;font-size:11px;color:var(--sub)}
+.pipet span{flex:1;text-align:center}
+.pipet span.here{color:var(--ink);font-weight:700}
+.jh{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.jst{border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+.jst.act{background:var(--main);color:#fff}
+.jst.wait{background:var(--warn);color:#fff}
+.jst.ng{background:var(--ng);color:#fff}
+.jst.fin{background:#eef1f0;color:var(--sub)}
+.ojob.fin{opacity:.75}
+.clk{cursor:pointer;border-radius:8px}
+.ojob.clk{padding:6px 6px;margin:0 -6px}
+.clk:hover,.clk:focus{background:var(--main-soft);outline:none;opacity:1}
+.oitems li.clk{padding:4px 6px;margin:0 -6px}
+.arrow{color:var(--main);font-weight:700}
+.jgo{display:inline-flex;align-items:center;gap:6px}
+.orgback{position:sticky;top:8px;z-index:5;margin:-6px 0 10px}
+.orgback .btn{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.multibar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 12px}
+.selbox{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--sub);cursor:pointer;margin-bottom:4px}
+.selbox input{width:20px;height:20px;cursor:pointer}
+.kept{margin-top:18px;background:#fafbfb;border:1px dashed var(--line);border-radius:12px;padding:10px 14px}
+.kept summary{cursor:pointer;color:var(--sub);font-weight:700}
+.kept .item{margin-top:10px;opacity:.85}
+.srvrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.srvrow .k{min-width:7.5em;color:var(--sub);font-size:14px}
+.path{font-family:Consolas,monospace;font-size:14px;background:#f4f6f5;border-radius:6px;padding:3px 8px;overflow-wrap:anywhere}
+.srvfiles{display:grid;gap:6px}
+.srvfile{display:flex;gap:8px;align-items:center;flex-wrap:wrap;cursor:pointer;overflow-wrap:anywhere}
+.srvfile select.appmode{max-width:100%;min-width:0;width:100%;flex:1 1 100%;font-size:15px}.srvfile select.appchoose{width:100%;flex:1 1 100%}
+.srvfile input{width:20px;height:20px}
+.rdone{grid-column:1/-1;background:#e6f4e7;border:2px solid var(--ok);border-radius:12px;padding:12px 16px;color:var(--ink);font-size:15.5px;overflow-wrap:anywhere}
+.rdone .rh{font-size:18px;font-weight:700;color:var(--ok);margin-bottom:4px}
+.rdone ul{margin:4px 0 0;padding-left:1.3em}
+.rdone .rw{color:var(--ng);font-weight:700;margin-top:6px}
+.rdone.ng{background:var(--ng-soft);border-color:var(--ng)}
+.rdone.ng .rh{color:var(--ng)}
+.item.justdone{border:2px solid var(--ok)}
+.item.focus{border:2.5px solid var(--warn);box-shadow:0 0 0 4px var(--warn-soft)}
+.pipel{display:flex;justify-content:space-between;font-size:11px;color:var(--sub)}
+.ojob{padding:6px 0;border-top:1px dotted var(--line);font-size:13.5px}
+.ocount{display:flex;flex-wrap:wrap;gap:6px}
+.swatch{display:inline-block;width:34px;height:8px;border-radius:4px;background:#b9c4c1;vertical-align:middle}
+.olegend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px;color:var(--sub);margin:0 0 14px}
+.bossask{display:inline-block;margin-top:6px;background:var(--warn);color:#fff;border-radius:999px;padding:2px 12px;font-size:14px;font-weight:700}
+.bossask.none{background:var(--ok-soft);color:var(--ok)}
+/* 組織図（R8.10.1 暗い画面・端末ふう）。#org の中だけ。ほかの画面の色は変えない */
+.orgd{--o-bg:#ffffff;--o-ink:#24292f;--o-dim:#57606a;--o-line:#c9d1d9;--o-boss:#d1600f;--o-run:#1a7f37;--o-wait:#0969da;--o-chk:#8250df;--o-hold:#9a6700;--o-ng:#cf222e;
+  background:var(--o-bg);color:var(--o-ink);font-family:"Yu Gothic UI","Meiryo","Noto Sans CJK JP","Noto Sans JP",sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.08);border:1px solid #e3e6ea;font-size:15px;line-height:1.7;border-radius:12px;padding:16px;margin:0 0 14px;overflow:hidden}
+.orgd *{box-sizing:border-box}
+.orgd .ot{color:var(--o-dim);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.orgd .ot b{color:var(--o-ink)}
+.orgd .obox{border:2px solid var(--o-c,var(--o-wait));border-radius:10px;padding:10px 12px;background:#fff;min-width:0;position:relative}
+.orgd .obox.s-run{--o-c:var(--o-run)} .orgd .obox.s-wait{--o-c:var(--o-wait)} .orgd .obox.s-chk{--o-c:var(--o-chk)} .orgd .obox.s-boss{--o-c:var(--o-boss)}
+.orgd .obox.clk:hover,.orgd .obox.clk:focus{background:#f6f8fa;outline:none}
+.orgd .obox>.nm{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.orgd .obox>.nm b{color:var(--o-c);font-size:16.5px}
+.orgd .tag{color:var(--o-dim);font-size:13px}
+.orgd .st{margin-left:auto;white-space:nowrap}
+.orgd .ostate{color:var(--o-c);background:none;border:0;border-radius:0;padding:0;margin:0;font-size:inherit;font-weight:400}
+.orgd .ostate.hold{color:var(--o-hold)} .orgd .ostate.ng{color:var(--o-ng)}
+.orgd .run{color:var(--o-run)}
+.orgd .ospin{display:inline-block;width:1ch;text-align:center}
+.orgd .ospin::before{content:"|";animation:ospin .8s steps(1) infinite}
+@keyframes ospin{0%{content:"|"}25%{content:"/"}50%{content:"-"}75%{content:"\\"}}
+@media (prefers-reduced-motion:reduce){.orgd .ospin::before{animation:none}}
+.orgd .row{margin-top:4px;overflow-wrap:anywhere}
+.orgd .row .k{color:var(--o-dim)}
+.orgd .bar4{margin-top:6px;display:flex;gap:3px}
+.orgd .bar4 i{flex:1;height:10px;border:1px solid var(--o-line);background:transparent;display:block}
+.orgd .bar4 i.on{background:var(--o-run);border-color:var(--o-run)}
+.orgd .bar4 i.hold{background:var(--o-hold);border-color:var(--o-hold)}
+.orgd .bar4 i.ng{background:var(--o-ng);border-color:var(--o-ng)}
+.orgd .bar4l{display:flex;gap:3px;color:var(--o-dim);font-size:12.5px}
+.orgd .bar4l span{flex:1;text-align:center;white-space:nowrap}
+.orgd .bar4l span.here{color:var(--o-ink)}
+.orgd .otree{position:relative}
+.orgd .ovl{width:3px;height:22px;background:#6e7781;margin:0 auto}
+.orgd .oline{position:relative;display:flex;gap:24px;padding-top:22px;align-items:stretch}
+.orgd .obar{position:absolute;top:0;height:3px;background:#6e7781}
+.orgd .ocell{position:relative;flex:0 0 calc((100% - 48px) / 3);min-width:0;display:flex}
+.orgd .ocell>.obox{flex:1}
+.orgd .ocell::before{content:"";position:absolute;left:calc(50% - 1.5px);top:-22px;width:3px;height:22px;background:#6e7781}
+.orgd .ocell:not(:last-child)::after{content:"";position:absolute;right:-24px;top:26px;width:24px;height:3px;background:#6e7781}
+@media (max-width:700px){
+  .orgd .otree{margin-left:6px;border-left:3px solid #6e7781;padding-left:16px}
+  .orgd .ovl,.orgd .obar,.orgd .ocell::after{display:none}
+  .orgd .oline{flex-direction:column;gap:12px;padding-top:12px}
+  .orgd .ocell{flex:1 1 auto}
+  .orgd .ocell::before{left:-16px;top:26px;width:16px;height:3px}
+}
+.orgd .sub{margin-top:6px;border-top:1px dotted var(--o-line);padding-top:4px;font-size:14px}
+.orgd .sub summary{cursor:pointer;color:var(--o-dim)}
+.orgd .ojob,.orgd .oitems li{padding:3px 4px;margin:0 -4px;border-radius:4px;overflow-wrap:anywhere;list-style:none}
+.orgd .oitems{margin:2px 0 0;padding:0}
+.orgd .oitems li{border:0}
+.orgd .oitems li::before{content:"> ";color:var(--o-dim)}
+.orgd .oitems li.wait::before{color:var(--o-hold)} .orgd .oitems li.consult::before{color:var(--o-ng)} .orgd .oitems li.done::before{content:"✓ ";color:var(--o-run)}
+.orgd .d{color:var(--o-dim);font-size:13px}
+.orgd .clk:hover,.orgd .clk:focus{background:#f6f8fa;outline:none}
+.orgd .arrow{color:var(--o-boss)}
+.orgd .oask{border:4px solid #d1245c;border-radius:12px;padding:12px 14px;margin:0 0 16px;background:#ffe4ec;box-shadow:0 2px 8px rgba(209,36,92,.18)}
+.orgd .oask h3{margin:0 0 6px;font-size:18px;color:#b3124a;font-family:inherit;font-weight:700}
+.orgd .oask .d{color:#7a2340}
+.orgd .oask a{color:#b3124a;font-weight:700}
+.orgd .legend{display:flex;flex-wrap:wrap;gap:4px 14px;color:var(--o-dim);font-size:12px;margin:0 0 12px}
+.orgd .legend i{font-style:normal}
+.orgd .log{margin-top:16px;border:1px dashed var(--o-line);border-radius:8px;padding:8px 12px}
+.orgd .log h3{margin:0 0 4px;font-size:13px;color:var(--o-dim);font-weight:400;font-family:inherit}
+.orgd .lg{display:grid;grid-template-columns:auto auto 1fr auto;gap:0 10px;padding:1px 0;align-items:baseline}
+.orgd .lg .t{color:var(--o-dim)} .orgd .lg .w{color:var(--o-wait)} .orgd .lg .r{white-space:nowrap}
+.orgd .lg .r.ok{color:var(--o-run)} .orgd .lg .r.run{color:var(--o-run)} .orgd .lg .r.wait{color:var(--o-wait)} .orgd .lg .r.consult,.orgd .lg .r.error{color:var(--o-ng)}
+.orgd .lg .m{overflow-wrap:anywhere;min-width:0}
+.orgd .stline{margin-top:12px;padding-top:8px;border-top:1px dashed var(--o-line);color:var(--o-dim)}
+.orgd .stline b{color:var(--o-ink)}
+.orgd .warnbox{color:var(--o-hold);margin-top:10px}
+@media (max-width:640px){
+  .orgd{padding:12px}
+  .orgd .lg{grid-template-columns:auto 1fr auto}
+  .orgd .lg .w{grid-column:2;grid-row:1} .orgd .lg .t{grid-column:1;grid-row:1} .orgd .lg .r{grid-column:3;grid-row:1} .orgd .lg .m{grid-column:1/-1;grid-row:2;padding-left:2px;margin-bottom:3px}
+}
+@media (max-width:640px){.onode{min-width:0}.ogrid{grid-template-columns:1fr}}
+/* 改善12（R8.9.30） */
+.files .fi{display:block;font-size:12.5px;color:var(--sub)}
+.lefts{margin:8px 0 0;padding-left:1.2em}
+.lefts li{margin:4px 0;overflow-wrap:anywhere}
+.lefts .lw{font-weight:700;color:var(--ng)}
+.guide{background:#fff;border:1.5px solid var(--ng);border-radius:10px;padding:10px 14px;margin-top:10px}
+.guide .gk{font-weight:700;color:var(--ng)}
+.guide ol{margin:6px 0 0;padding-left:1.4em}
+.guide li{margin:2px 0}
+.commonbox{background:var(--warn-soft);border:1.5px solid var(--warn);border-radius:12px;padding:12px 14px;margin:0 0 14px}
+.commonbox .cw{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.commonbox .cw span{background:#fff;border:1px solid var(--warn);border-radius:999px;padding:1px 10px;font-size:14px}
+.commonbox details summary{cursor:pointer;color:var(--sub);font-size:14px}
+.allex{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;text-align:right}
+.allconf{text-align:left;background:#fff;border:1.5px solid var(--warn);border-radius:10px;padding:10px 14px;margin-top:8px;overflow-wrap:anywhere}
+.asidebox{background:var(--main-soft);border:1.5px solid var(--main);border-radius:12px;padding:10px 14px;margin:0 0 14px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;overflow-wrap:anywhere}
+.asidebox>span{min-width:0}
+tr.focus td{background:var(--warn-soft)!important}
+tr.focus{outline:3px solid var(--warn);outline-offset:-3px}
+.rowjump{margin-top:6px}
+</style>
+<style id="theme">/* 見た目：桜色（R8.9.30 改善13） */
+:root{--bg:#fff8f7;--card:#fff;--ink:#3b2b2f;--sub:#7b6569;--line:#f2dfe1;--main:#c94c6b;--main-soft:#fde9ee;}
+header{box-shadow:0 3px 14px rgba(0,0,0,.08)}
+header h1{letter-spacing:.04em}
+.card,.step,.send,.others span{border-radius:18px}
+.step,.card,.send{box-shadow:0 2px 12px rgba(40,40,80,.06)}
+.step{transition:transform .15s,box-shadow .15s}
+.step:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(40,40,80,.10)}
+.btn{border-radius:999px;transition:filter .15s,transform .15s}
+.btn.primary:not([disabled]):hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn.small{border-radius:999px}
+main{position:relative;z-index:1}
+body::before,body::after{content:"";position:fixed;top:60px;bottom:0;width:180px;pointer-events:none;z-index:0;background-repeat:repeat-y;background-size:180px auto}
+body::before{left:0}
+body::after{right:0;transform:scaleX(-1)}
+@media (max-width:1340px){body::before,body::after{opacity:.35}}
+@media (max-width:760px){body::before,body::after{display:none}}
+body{background:var(--bg)}header{background:linear-gradient(115deg,#d9708a,#eba0a6)}body::before,body::after{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22180%22%20height%3D%22760%22%3E%3Cpath%20d%3D%22M70.0%200%20L79.1%2020%20L87.2%2040%20L93.4%2060%20L97.1%2080%20L97.9%20100%20L95.6%20120%20L90.6%20140%20L83.3%20160%20L74.6%20180%20L65.4%20200%20L56.7%20220%20L49.4%20240%20L44.4%20260%20L42.1%20280%20L42.9%20300%20L46.6%20320%20L52.8%20340%20L60.9%20360%20L70.0%20380%20L79.1%20400%20L87.2%20420%20L93.4%20440%20L97.1%20460%20L97.9%20480%20L95.6%20500%20L90.6%20520%20L83.3%20540%20L74.6%20560%20L65.4%20580%20L56.7%20600%20L49.4%20620%20L44.4%20640%20L42.1%20660%20L42.9%20680%20L46.6%20700%20L52.8%20720%20L60.9%20740%20L70.0%20760%22%20stroke%3D%22%239fbf95%22%20stroke-width%3D%222%22%20fill%3D%22none%22%20opacity%3D%22.55%22/%3E%3Cg%20transform%3D%22translate%2887.2%2C40%29%20rotate%28210%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2897.9%2C100%29%20rotate%28-30%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2883.3%2C160%29%20rotate%28210%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2856.7%2C220%29%20rotate%28-30%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2842.1%2C280%29%20rotate%28210%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2852.8%2C340%29%20rotate%28-30%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2879.1%2C400%29%20rotate%28210%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2897.1%2C460%29%20rotate%28-30%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2890.6%2C520%29%20rotate%28210%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2865.4%2C580%29%20rotate%28-30%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2844.4%2C640%29%20rotate%28210%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2846.6%2C700%29%20rotate%28-30%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2870.0%2C760%29%20rotate%28210%29%20scale%28.9%29%22%3E%3Cpath%20d%3D%22M0%200%20C6%20-10%2016%20-10%2022%200%20C16%2010%206%2010%200%200Z%22%20fill%3D%22%23bcd9b0%22%20opacity%3D%220.75%22/%3E%3C/g%3E%3Cg%20transform%3D%22translate%2849.1%2C20%29%20scale%281.25%29%22%3E%3Cg%20opacity%3D%220.9%22%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%280%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%2872%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28144%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28216%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28288%29%22/%3E%3Ccircle%20r%3D%224.0%22%20fill%3D%22%23ffe7a3%22/%3E%3C/g%3E%3C/g%3E%3Cg%20transform%3D%22translate%28133.9%2C100%29%20scale%280.9%29%22%3E%3Cg%20opacity%3D%220.9%22%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%2817%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%2889%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28161%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28233%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28305%29%22/%3E%3Ccircle%20r%3D%224.0%22%20fill%3D%22%23fff0bd%22/%3E%3C/g%3E%3C/g%3E%3Cg%20transform%3D%22translate%2844.6%2C180%29%20scale%281.05%29%22%3E%3Cg%20opacity%3D%220.9%22%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%2834%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28106%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28178%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28250%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28322%29%22/%3E%3Ccircle%20r%3D%224.0%22%20fill%3D%22%23ffe39a%22/%3E%3C/g%3E%3C/g%3E%3Cg%20transform%3D%22translate%2880.4%2C260%29%20scale%280.8%29%22%3E%3Cg%20opacity%3D%220.9%22%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%2851%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28123%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28195%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28267%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28339%29%22/%3E%3Ccircle%20r%3D%224.0%22%20fill%3D%22%23ffe7a3%22/%3E%3C/g%3E%3C/g%3E%3Cg%20transform%3D%22translate%2822.8%2C340%29%20scale%281.25%29%22%3E%3Cg%20opacity%3D%220.9%22%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%2868%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28140%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28212%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28284%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28356%29%22/%3E%3Ccircle%20r%3D%224.0%22%20fill%3D%22%23fff0bd%22/%3E%3C/g%3E%3C/g%3E%3Cg%20transform%3D%22translate%28123.2%2C420%29%20scale%280.9%29%22%3E%3Cg%20opacity%3D%220.9%22%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%2885%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28157%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28229%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28301%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28373%29%22/%3E%3Ccircle%20r%3D%224.0%22%20fill%3D%22%23ffe39a%22/%3E%3C/g%3E%3C/g%3E%3Cg%20transform%3D%22translate%2865.6%2C500%29%20scale%281.05%29%22%3E%3Cg%20opacity%3D%220.9%22%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28102%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28174%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28246%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28318%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28390%29%22/%3E%3Ccircle%20r%3D%224.0%22%20fill%3D%22%23ffe7a3%22/%3E%3C/g%3E%3C/g%3E%3Cg%20transform%3D%22translate%28101.4%2C580%29%20scale%280.8%29%22%3E%3Cg%20opacity%3D%220.9%22%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28119%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28191%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28263%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28335%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23fbd6de%22%20transform%3D%22rotate%28407%29%22/%3E%3Ccircle%20r%3D%224.0%22%20fill%3D%22%23fff0bd%22/%3E%3C/g%3E%3C/g%3E%3Cg%20transform%3D%22translate%2812.1%2C660%29%20scale%281.25%29%22%3E%3Cg%20opacity%3D%220.9%22%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28136%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28208%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28280%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28352%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f3b4c4%22%20transform%3D%22rotate%28424%29%22/%3E%3Ccircle%20r%3D%224.0%22%20fill%3D%22%23ffe39a%22/%3E%3C/g%3E%3C/g%3E%3Cg%20transform%3D%22translate%2896.9%2C740%29%20scale%280.9%29%22%3E%3Cg%20opacity%3D%220.9%22%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28153%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28225%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28297%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28369%29%22/%3E%3Cellipse%20cx%3D%220%22%20cy%3D%22-9.2%22%20rx%3D%224.8%22%20ry%3D%227.9%22%20fill%3D%22%23f6c3cf%22%20transform%3D%22rotate%28441%29%22/%3E%3Ccircle%20r%3D%224.0%22%20fill%3D%22%23ffe7a3%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}.num{background:#fde6ec;color:#c94c6b}
+/* 改善28 */
+.newpass .npt{overflow-wrap:anywhere}
+.newpass{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;max-width:min(92vw,640px);display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--main);color:#fff;border-radius:12px;padding:8px 14px;font-size:15px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.22)}
+@media (max-width:640px){.newpass{top:auto;bottom:54px;max-width:96vw;padding:4px 10px;font-size:12px;border-radius:999px;flex-wrap:nowrap;cursor:pointer}.newpass .npt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.newpass a{color:#fff;text-decoration:underline;white-space:nowrap}
+.newpass .npx{border:0;background:rgba(255,255,255,.2);color:#fff;border-radius:999px;width:26px;height:26px;cursor:pointer;font-size:16px;line-height:1}
+.fab{position:fixed;right:12px;bottom:14px;z-index:8;width:126px;display:flex;flex-direction:column;gap:4px;align-items:stretch;background:var(--card);border:1.5px solid var(--main);border-radius:12px;padding:6px 8px;box-shadow:0 3px 12px rgba(0,0,0,.18);font-size:12px;line-height:1.35}
+.fab[hidden]{display:none}
+.fab .fabname{color:var(--sub);overflow-wrap:anywhere}
+.fab .fabbtn{display:block;text-align:center;background:var(--main);color:#fff;text-decoration:none;font-weight:700;border-radius:999px;padding:4px 6px;font-size:13px}
+@media (max-width:1259px){.fab{right:8px;bottom:10px;width:auto;max-width:none;padding:0;gap:0;border:0;background:transparent;box-shadow:none;opacity:.95}.fab .fabname{display:none}.fab .fabbtn{padding:7px 12px;font-size:13px;box-shadow:0 3px 12px rgba(0,0,0,.28)}main{padding-bottom:84px}}
+@media (max-width:640px){main{padding-bottom:84px}}
+.srvapp{font-weight:400;font-size:15px;overflow-wrap:anywhere;min-width:0}.srvapp b{font-weight:700}.srvapp select{max-width:100%;font-size:15px}
+.donelist .dnw{display:flex;gap:8px;align-items:flex-start;min-width:0}
+.donelist .dnw input{width:20px;height:20px;margin-top:4px;flex:none}
+.dlbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:8px}
+.dlout:empty{display:none}
+</style>
+</head>
+<body>
+<header><h1>AI作業パネル　さくら居宅介護支援事業所</h1><span class="badge-local">🔒 このパソコンの中だけで動いています</span></header>
+<div class="busy" id="busy"><div><div class="spin"></div><div id="busyText">処理しています…</div></div></div>
+<main id="view"></main>
+<div class="fab" id="fab" hidden><span class="fabname" id="fabname"></span><a class="fabbtn" id="fabbtn" href="#">↑ トップへ戻る</a></div>
+<script>
+const TOKEN="__TOKEN__";
+let S=null; // state
+const $=s=>document.querySelector(s);
+// 画面に「null」と出ないように、append に渡した空の部品は捨てる（改善10の5）
+{const _ap=Element.prototype.append;Element.prototype.append=function(...k){return _ap.apply(this,k.flat().filter(c=>c!=null&&c!==false))}}
+function el(tag,attrs,...kids){const e=document.createElement(tag);for(const k in (attrs||{})){const v=attrs[k];if(k==='class')e.className=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(v!==false&&v!=null)e.setAttribute(k,v===true?'':v)}for(const c of kids.flat()){if(c==null||c===false)continue;e.append(c.nodeType?c:document.createTextNode(String(c)))}return e}
+async function post(url,body,isForm){const o={method:'POST',headers:{'X-Token':TOKEN}};if(isForm)o.body=body;else{o.headers['Content-Type']='application/json';o.body=JSON.stringify(body||{})}const r=await fetch(url,o);let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.error)throw new Error(j.error||('エラー '+r.status));return j}
+// 画面のエラー（プログラムの不具合）を記録に残す（改善12 No.43）：送るのは画面の名前だけ。エラーの文は送らない
+{let n=0;const rec=()=>{if(n++>20)return;try{fetch('/api/errlog',{method:'POST',headers:{'X-Token':TOKEN,'Content-Type':'application/json'},body:JSON.stringify({screen:(location.hash||'#').slice(1).split('/')[0]})}).catch(()=>{})}catch(e){}};
+ window.addEventListener('error',rec);window.addEventListener('unhandledrejection',rec)}
+function busy(on,text){$('#busy').classList.toggle('on',on);if(text)$('#busyText').textContent=text}
+let flash=null;
+function msg(kind,text,extra){flash={kind,text,extra}}
+async function load(){S=await post('/api/state');render()}
+let keepFlash=false;
+function go(h){keepFlash=true;if(location.hash==='#'+h){render()}else{location.hash=h}}
+window.addEventListener('hashchange',()=>{if(!keepFlash)flash=null;keepFlash=false;render()});
+window.addEventListener('scroll',()=>fabUpd(),{passive:true});window.addEventListener('resize',()=>fabUpd());
+function crumb(t,mid){return el('div',{class:'crumb'},el('a',{href:'#',class:'top-back'},'← トップへ戻る'),mid?['　／　',el('a',{href:'#'+mid[1]},mid[0])]:null,'　／　'+t)}
+function backBar(extra){return el('div',{class:'bar',style:'justify-content:flex-start'},el('a',{class:'btn light',href:'#'},'← トップへ戻る'),extra||null)}
+function flashBox(){if(!flash)return '';const f=flash;return el('div',{class:'msg '+f.kind},f.text,f.extra?f.extra():null)}
+// 「すでに氏名一覧の 207 行目に登録されています」のとき：その行を開くボタン（改善12 No.37）
+function rowJump(row){return row?el('div',{class:'rowjump'},el('button',{class:'btn light small rowjumpbtn',onclick:()=>goArg('names',row)},'氏名一覧のその行（'+row+'行目）を開く')):null}
+// 除外や登録をしたら、赤・橙の確認も含めて自動で置き換え直す（改善12 No.34 ③）
+async function remaskIn(done){if(!S.src.length&&!S.stage.length){msg('ok',done);return}
+  const oldKeys=new Set([...document.querySelectorAll('.ask[data-key]')].map(b=>b.dataset.key));
+  busy(true,'もう一度置き換えています…');const r=await post('/api/mask');decReset();
+  // 結果の知らせ（現場試験 U3）：新しい橙と、処理できなかったファイルを分けて書く。処理できなかったファイルがなければ書かない
+  const ok=r.files.filter(f=>f.status==='ok'),held=r.files.filter(f=>f.status==='held'),bad=r.files.filter(f=>f.status==='err');
+  const nm=a=>a.map(f=>f.name).join('、');let t=done+'\n→ もう一度置き換えました（渡す前のファイルも、今の氏名一覧で置き換え直しました）。';
+  if(held.length){const all=held.flatMap(f=>(f.suspects||[]).map(x=>[f,x])),nw=all.filter(([f,x])=>!oldKeys.has(susKey(x))),left=all.length-nw.length;
+    if(nw.length)t+='\n置き換え直したら、新しく確かめてほしい所が '+nw.length+' か所出ました（'+[...new Set(nw.map(([f])=>f.name))].join('、')+'）。';
+    if(left)t+='\nまだ判断していない箱が残っています（'+left+' か所）。';GOTO_ASK=true}
+  if(bad.length)t+='\n処理できなかったファイルが '+bad.length+' 件あります（'+nm(bad)+'）。';
+  if(!held.length&&!bad.length)t+='\n渡せます（'+ok.length+'件）。下の「OK・AIに渡す」へ進んでください。';
+  msg(bad.length?'ng':held.length?'info':'ok',t,held.length?()=>el('button',{class:'btn small light gotoask',onclick:gotoAsk},'新しい箱の所へ移る'):null);go('p2')}
+let GOTO_ASK=false;
+function gotoAsk(){const b=document.querySelector('.ask[data-dec="1"]:not(.decided)');if(b){b.scrollIntoView({block:'center'});b.classList.add('focus')}}
+async function remask(done){await act(()=>remaskIn(done),'もう一度置き換えています…')}
+async function act(fn,text){try{busy(true,text||'処理しています…');await fn();}catch(e){msg('ng',e.message)}finally{busy(false);await load()}}
+async function openIt(where,name){try{await post('/api/open',{where,name})}catch(e){alert(e.message)}}
+
+// ---- 改善28 No.49：④の自動更新（画面を開いている間、10秒ごとに40の状態を確かめる。変わったときだけ描き直す） ----
+const POLL_MS=10000;let POLL_BUSY=false;
+async function pollPassed(){
+  if(POLL_BUSY||!S||$('#busy').classList.contains('on'))return;
+  POLL_BUSY=true;
+  try{
+    const r=await post('/api/passed/poll');
+    if(JSON.stringify(r.passed||[])===JSON.stringify(S.passed||[])&&r.nPassed===S.nPassed)return; // 変わっていなければ何もしない
+    const had=new Set((S.passed||[]).map(x=>x.folder));
+    const fresh=(r.passed||[]).filter(x=>!x.keep&&!x.restored&&!had.has(x.folder));
+    S.passed=r.passed||[];S.nPassed=r.nPassed;
+    const [h]=route();
+    if(h==='p4'){ // 読んでいる所がずれないように、画面に見えている先頭のカードの位置を覚えて、描き直したあとで合わせる
+      const y=window.scrollY,a=[...document.querySelectorAll('#view > .item[data-folder]')].find(e=>e.getBoundingClientRect().bottom>0),af=a&&a.dataset.folder,at=a&&a.getBoundingClientRect().top;
+      render(true);window.scrollTo(0,y);
+      if(af){const b=[...document.querySelectorAll('#view > .item[data-folder]')].find(e=>e.dataset.folder===af);if(b)window.scrollBy(0,b.getBoundingClientRect().top-at)}}
+    else if(h===''){const c=document.querySelector('#view .step[data-step="4"] .cnt');if(c)c.replaceWith(cnt(S.nPassed,'hot')) } // トップは④の件数だけ入れ替える（入力中の欄はそのまま）
+    if(fresh.length)showNewPass(fresh);
+  }catch(e){}finally{POLL_BUSY=false}
+}
+function passLabel(x){const m=/^(利用者\d{3,})_?(.*)$/.exec(x.folder||'');const doc=((m?m[2]:x.folder)||'').replace(/（[^（）]*実施）$/,'');return m?'【'+m[1]+'】・'+doc:doc}
+function showNewPass(list){
+  const old=document.getElementById('newpass');if(old)old.remove();
+  const narrow=window.innerWidth<=640,on4=route()[0]==='p4';
+  const t=narrow?'新しい合格品が届きました（'+passLabel(list[0])+(list.length>1?' ほか'+(list.length-1)+'件':'')+'）'
+    :'新しい合格品が届きました（'+list.slice(0,3).map(passLabel).join('、')+(list.length>3?'　ほか'+(list.length-3)+'件':'')+'）';
+  const box=el('div',{id:'newpass',class:'newpass',role:'status'},el('span',{class:'npt'},t),(on4||narrow)?null:el('a',{href:'#p4',onclick:()=>box.remove()},'④を見る'),narrow?null:el('button',{class:'npx','aria-label':'閉じる',onclick:()=>box.remove()},'×'));
+  if(narrow)box.addEventListener('click',()=>{box.remove();if(!on4)location.hash='#p4'});
+  document.body.append(box);setTimeout(()=>{if(box.isConnected)box.remove()},7000)
+}
+setInterval(pollPassed,POLL_MS);
+// ---- 改善28 No.54：どの画面にも「トップへ戻る」と、いまの画面の名前（途中までスクロールしているときだけ出す） ----
+const FAB_NAMES={p1:'① 資料を入れる',p2:'② 置き換えて確認する',p3done:'③ AIに渡しました',p4:'④ 届いた合格品',p5:'⑤ 要相談',p6:'⑥ 完成した書類'};
+function fabName(h){const f=document.getElementById('fabname');if(!f)return;
+  const h2=document.querySelector('#view h2');f.textContent=FAB_NAMES[h]||(h2?h2.textContent.trim():'')||'いまの画面'}
+function fabUpd(){
+  const f=document.getElementById('fab');if(!f)return;
+  const h2=document.querySelector('#view h2'),top=!(location.hash||'#').slice(1)||(h2&&h2.textContent.trim()==='今日の作業');
+  const de=document.documentElement,max=de.scrollHeight-window.innerHeight,y=window.scrollY;
+  f.hidden=!(!top&&max>16&&y>8&&y<max-8)}
+let RID=0;
+function route(){const h=(location.hash||'#').slice(1);const i=h.indexOf('/');if(i<0)return [h,''];let a='';try{a=decodeURIComponent(h.slice(i+1))}catch(e){}return [h.slice(0,i),a]}
+function render(keep){
+  RID++;const [h,arg]=route();const v=$('#view');v.innerHTML='';
+  const pages={'':pTop,p1,p2,p3done,p4,p5,p6,names:pNames,shiji:pShiji,shijidoc:pShijiDoc,careplan:v=>pOrig(v,'careplan'),assess:v=>pOrig(v,'assess'),origdoc:pOrigDoc,memo:pMemo,howto:pHowto,work:pWork,ai40:(v,a)=>pAi(v,'40',a),ai50:(v,a)=>pAi(v,'50',a),clean:pClean,srv:pSrv,keikaadd:pKeikaAdd,keikaxadd:pKeikaXAdd,hyo1add:pHyo1Add,keika:pKeika,org:pOrg,fix:pFix,other:pOther,kaipoke:pKaipoke,rename:pRename};
+  if(h===''||h==='org')FROM_ORG=false;
+  if(h!=='p4')RESTORED=null;
+  (pages[h]||pTop)(v,arg);if(!keep)window.scrollTo(0,0);
+  if(FROM_ORG)v.prepend(el('div',{class:'orgback'},el('a',{href:'#org',class:'btn light small'},'← 組織図へ戻る')));
+  fabName(h);fabUpd();
+  if(keep)return;
+  if(h==='p4'&&RESTORED&&!arg){const j=v.querySelector('.item.justdone');if(j)j.scrollIntoView({block:'center'})}
+  if(['p4','p5','p6'].includes(h)&&arg){
+    const tg=[...v.querySelectorAll('[data-folder]')].find(e=>e.dataset.folder===arg);
+    if(tg){tg.classList.add('focus');tg.scrollIntoView({block:'center'})}
+    else v.querySelector('h2')?.after(el('div',{class:'msg info'},'組織図で押した仕事は、この画面に見当たりません（片づけ済み・名前が変わった など）。'));
+  }
+}
+let FROM_ORG=false;
+function orgGo(target){if(!target)return;FROM_ORG=true;const i=target.indexOf('/');if(i<0)go(target);else goArg(target.slice(0,i),target.slice(i+1))}
+function goArg(page,arg){flash=null;go(page+'/'+encodeURIComponent(arg))} // ボタンで別の画面へ移るときは、前の画面の知らせを持ち越さない（改善27 試験役 P5）
+function cnt(n,cls,unit){return el('span',{class:'cnt'+(n>0&&cls?' '+cls:'')},(unit||'')+n+'件')}
+function pTop(v){
+  const held=(S.last&&S.last.files||[]).filter(f=>f.status!=='ok').length;
+  const step=(n,title,desc,badge,h)=>el('div',{class:'step','data-step':n,onclick:()=>go(h)},el('div',{class:'num'},n),el('div',{},el('b',{},title),el('div',{class:'desc'},desc)),badge);
+  v.append(el('h2',{},'今日の作業'),el('p',{class:'lead'},'上から順に進めてください。色の付いた数字のところに、やることがあります。'),flashBox(),
+   el('div',{class:'steps'},
+    step(1,'資料を入れる','AIに渡したいExcel・Word・PDFをドラッグで入れます',cnt(S.src.length,'warn','未処理 '),'p1'),
+    step(2,'名前などの個人情報を記号に置き換えて確認する','名前などを記号にして、色付きで確かめます',held?el('span',{class:'cnt warn'},'保留 '+held+'件'):cnt(S.stage.length,'hot','確認待ち '),'p2'),
+    step(3,'AIに渡す','確認でOKしたものを 30_記入係作業中 へ送ります',cnt(S.stage.length,'hot'),'p2'),
+    step(4,'届いた合格品','統括リーダーの合格品を、元の名前に戻します',cnt(S.nPassed,'hot'),'p4'),
+    step(5,'要相談','AIが止まったもの。理由を読んで対応します',cnt((S.consult||[]).length,'warn'),'p5'),
+    step(6,'完成した書類','元の名前に戻った書類を開きます',cnt(S.done.length),'p6')),
+   el('div',{class:'group-label'},'そのほか'),
+   el('div',{class:'others'},...[['組織図と進み具合','org'],['氏名一覧を開く','names'],['00_指示','shiji'],['ケアプラン様式（原本）','careplan'],['アセスメント（原本）','assess'],['引き継ぎメモ','memo'],['使い方','howto'],['マスキング作業フォルダ','work'],['支援経過のファイル（写し直す）','keika'],['カイポケのCSVを入れる','kaipoke'],['サーバーの名前をそろえる','rename']].map(([t,h])=>el('a',{href:'#'+h,'data-page':h},t))),
+   kaizenBox());
+}
+// 気づいたことを書く（改善13 No.3）：パネル改善リストの「候補の一覧」に1行足す
+const KAIZEN={text:''};
+function kaizenBox(){
+  const MAX=1000; // 改善20 No.48（前は200）
+  const count=el('span',{class:'note',id:'kaizencount'});
+  const ta=el('textarea',{id:'kaizentext',rows:'4',maxlength:String(MAX),placeholder:'例：②の画面で、ボタンの字が小さくて読みにくい',oninput:e=>{KAIZEN.text=e.target.value;upd()}});ta.value=KAIZEN.text;
+  function upd(){const n=[...ta.value].length;count.textContent=n+' ／ '+MAX+' 字'}
+  upd();
+  // 結果はこの欄の中に出す（画面の上の知らせだと、下にあるこの欄から見えないため）
+  const put=async()=>{if(!ta.value.trim()){alert('書く欄が空です。気づいたことを一言書いてください。');return}
+    try{busy(true,'書いています…');const r=await post('/api/kaizen/add',{text:ta.value});KAIZEN.text='';KAIZEN.msg={kind:'ok',text:'✓ '+r.ok}}
+    catch(e){KAIZEN.msg={kind:'ng',text:e.message}}
+    finally{busy(false);await load();const b=document.getElementById('kaizenbox');if(b)b.scrollIntoView({block:'center'})}};
+  const km=KAIZEN.msg;KAIZEN.msg=null;
+  return el('div',{class:'kaizen',id:'kaizenbox'},el('div',{class:'group-label'},'気づいたことを書く'),
+    el('p',{class:'note',style:'margin-top:0'},'パネルを使っていて気づいたこと・困ったことを、一言書いてください。「書く」を押すと、統括リーダーの「パネル改善リスト」に書き足します。'),
+    el('p',{class:'note titlewarn',style:'margin-top:0'},'利用者・家族の名前、住所、電話番号などは書かないでください（書いてあると、書かずにお知らせします）。'),
+    km?el('div',{class:'msg '+km.kind,id:'kaizenmsg'},km.text):null,
+    ta,el('div',{class:'bar'},count,el('span',{style:'display:flex;gap:8px'},el('button',{class:'btn light',id:'kaizenhist',onclick:()=>goArg('shijidoc','パネル改善リスト.md')},'これまでに書いたもの'),el('button',{class:'btn primary',id:'kaizenbtn',onclick:put},'書く'))));
+}
+function p1(v){
+  const inp=el('input',{type:'file',multiple:true,style:'display:none',accept:'.xlsx,.xlsm,.docx,.pdf',onchange:e=>up(e.target.files,'pick')});
+  const drop=el('div',{class:'drop'},el('div',{class:'big'},'ここにファイルをドラッグしてください'),el('div',{class:'sm'},'Excel（.xlsx）・Word（.docx）・PDF（FAX・スキャン）　／　まとめて何個でも入れられます'),el('div',{style:'margin-top:14px'},el('button',{class:'btn light small',onclick:()=>inp.click()},'パソコンから選ぶ')),inp);
+  drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');up(e.dataTransfer.files,'drag')});
+  async function up(files,how){if(!files||!files.length)return;const fd=new FormData();for(const f of files)fd.append('files',f);fd.append('how',how||'drag');
+    await act(async()=>{const r=await post('/api/upload',fd,true);let t=r.saved.length+'件を入れました。';if(r.dup.length)t+='　同じファイルがすでに入っていたので入れませんでした：'+r.dup.join('、');if(r.rejected.length)t+='　入れられなかったファイル（形式が対象外）：'+r.rejected.join('、');msg(r.rejected.length||r.dup.length?'ng':'ok',t)},'ファイルを入れています…')}
+  // 前に置き換えて、まだ渡していないファイルが残っているときの知らせ（改善 No.41）
+  const stageWarn=S.src.length&&S.stage.length?el('div',{class:'warnbox',id:'stagewarn'},'⚠ 前に置き換えたファイルが '+S.stage.length+' 件、まだ渡されずに残っています：'+S.stage.join('、')+'　別の方の分なら取り消してください（下の「渡す前のファイル」の「✕ 取り消す」）。'):null;
+  // 入れた日時と入れ方（改善12 No.42）
+  const fi=(m,n)=>{const x=(m||{})[n];return x?el('span',{class:'fi'},'入れた日時 '+x.at+'　／　入れ方：'+x.how):null};
+  v.append(crumb('1 資料を入れる'),el('h2',{},'1　資料を入れる'),flashBox(),asideBox(),stageWarn,drop,keikaTodayBox(),pasteBox(),keikaExtractBox(),
+    el('div',{id:'srclist'},el('h3',{class:'flist-h'},'まだ置き換えていないファイル・保留のファイル（'+S.src.length+'件）'),
+      S.src.length?el('div',{class:'files'},...S.src.map(n=>el('div',{},el('span',{class:'fn'},n,fi(S.srcInfo,n)),el('span',{class:'fr'},el('span',{class:'kind'},kindOf(n)),el('button',{class:'x',onclick:()=>removeFile('src',n)},'✕ 取り消す'))))):el('p',{class:'note'},'まだ入っていません。')),
+    S.stage.length?el('div',{id:'stagelist'},el('h3',{class:'flist-h'},'渡す前のファイル（置き換え済み・まだAIに渡していません）（'+S.stage.length+'件）'),
+      el('div',{class:'files'},...stageRows().map(x=>el('div',{},el('span',{class:'fn'},x.name,fi(S.stageInfo,x.name)),el('span',{class:'fr'},el('span',{class:'kind'},x.users.length?x.users.map(ulabel).join('、'):'利用者の名前なし'),el('button',{class:'x',onclick:()=>removeFile('stage',x.name)},'✕ 取り消す')))))):null,
+    regBox(),
+    el('div',{class:'bar'},el('span',{class:'note'},'入れたファイルは 1_元データ に置かれます。インターネットには送りません。'),(!S.src.length&&S.stage.length)?el('button',{class:'btn primary',id:'gosend',onclick:()=>go('p2')},'3　AIに渡す →'):el('button',{class:'btn primary',disabled:!S.src.length,onclick:runMask},'2　名前などの個人情報を記号に置き換える →')),backBar());
+}
+const PASTE={title:'',text:''};
+// 声で入力：題名欄にフォーカスしてから、パソコン側で Windowsキー＋H（Windowsの音声入力）を送ってもらう
+function voiceBtn(input,sfx){
+  sfx=sfx||'';
+  return el('button',{class:'btn light small voicebtn',type:'button',id:'voicebtn'+sfx,onclick:async()=>{
+    input.focus();
+    const hint=$('#voicehint'+sfx);
+    try{const r=await post('/api/voice');input.focus();
+      if(hint){hint.textContent=r.sent?r.ok:(r.hint||'Windowsキー＋H でも声で入力できます');hint.style.color=r.sent?'var(--ok)':'var(--warn)'}}
+    catch(e){input.focus();if(hint){hint.textContent='声の入力を立ち上げられませんでした。Windowsキー＋H でも声で入力できます';hint.style.color='var(--warn)'}}
+  }},'🎤 声で入力')}
+// 改善29 No.61：「AIへのひとこと」「直してほしいこと」は5000字まで。4500字を超えたら残りの字数、5000字を超えたら渡す前に止める（黙って切らない）
+const NOTE_MAX=5000,NOTE_WARN=4500;
+function noteTooLong(n){return '「ひとこと」が長すぎます（'+n+'字）。'+NOTE_MAX+'字までにしてください'}
+function noteCounter(getText,sfx){
+  const box=el('div',{class:'hint notecount',id:'notecount'+sfx});
+  function upd(){const n=[...getText()].length;
+    if(n>NOTE_MAX){box.textContent='長すぎます（'+n+'字）。'+NOTE_MAX+'字までにしてください';box.style.color='var(--ng)'}
+    else if(n>NOTE_WARN){box.textContent='あと'+(NOTE_MAX-n)+'字';box.style.color='var(--warn)'}
+    else{box.textContent='';box.style.color=''}
+    return n}
+  box.upd=upd;upd();return box}
+function pasteBox(){
+  const MAX=200000;
+  const title=el('input',{placeholder:'例：担当者会議 R8.9.27',style:'width:100%',maxlength:'60',oninput:e=>PASTE.title=e.target.value});title.value=PASTE.title;
+  const count=el('span',{class:'note'});
+  const ta=el('textarea',{placeholder:'ここに文字起こしの文を貼り付けてください（Ctrl＋V）',oninput:e=>{PASTE.text=e.target.value;upd()}});ta.value=PASTE.text;
+  function upd(){const n=[...ta.value].length;count.textContent=n.toLocaleString()+' 字'+(n>MAX?'（20万字を超えています。分けて入れてください）':'');count.style.color=n>MAX?'var(--ng)':''}
+  upd();
+  const put=async()=>{const t=ta.value;if(!t.trim()){alert('貼り付け欄が空です。');return}if([...t].length>MAX){alert('20万字を超えています。分けて入れてください。');return}
+    await act(async()=>{const r=await post('/api/paste',{title:title.value,text:t});PASTE.title='';PASTE.text='';msg('ok',r.ok)},'Wordにしています…')};
+  return el('div',{class:'paste'},el('h3',{},'文字起こしを貼り付けて入れる'),
+    el('p',{class:'note',style:'margin-top:0'},'録音の文字起こしなどを貼り付けると、このパソコンの中でWord（.docx）にして 1_元データ に入れます。インターネットには送りません。あとは他の資料と同じく「2 置き換える」で処理されます。'),
+    el('div',{class:'form'},el('span',{},'題名'),el('div',{},el('div',{class:'titlerow'},title,voiceBtn(title)),
+      el('div',{class:'titlewarn'},'題名には利用者の名前を入れないでください（例：担当者会議 R8.9.27）'),
+      el('div',{class:'hint',id:'voicehint'},'Windowsキー＋H でも声で入力できます'))),
+    el('div',{style:'margin-top:10px'},ta),
+    el('div',{class:'bar'},count,el('button',{class:'btn primary',onclick:put},'資料として入れる')));
+}
+function ulabel(id){const u=(S.users||[]).find(x=>x.id===id);return u?u.label:id}
+function stageRows(){const m={};for(const x of S.stageFiles||[])m[x.name]=x.users||[];return S.stage.map(n=>({name:n,users:m[n]||[]}))}
+async function removeFile(where,n){const w=where==='src'?'「'+n+'」を取り消しますか？\n（ドラッグする前の元のファイルは、そのまま残ります）':'「'+n+'」をAIに渡さずに取り消しますか？\n（元のファイルは 1_元データ＼処理済み に残っています）';if(!confirm(w))return;await act(async()=>{const r=await post('/api/remove',{where,name:n});msg('ok',r.ok)})}
+function regBox(){
+  const kind=el('select',{},el('option',{},'利用者'),el('option',{},'家族'));
+  const name=el('input',{placeholder:'例：大和 一郎（姓と名の間にスペース）',style:'width:100%'});
+  const alias=el('input',{placeholder:'（任意）ふりがな・呼び名など。／で区切る',style:'width:100%'});
+  const go2=async()=>{await act(async()=>{const r=await post('/api/newuser',{kind:kind.value,name:name.value,alias:alias.value});msg(r.already?'info':'ok',r.already?r.ok:r.ok+'。このあと「置き換える」を押してください。',r.already&&r.row?()=>rowJump(r.row):null)},'登録しています…')};
+  return el('details',{class:'reg',open:S.users.length===0},el('summary',{},'はじめての利用者・家族の書類を入れるとき（先に登録）'),
+    el('p',{class:'note'},'氏名一覧に載っていない方の名前は、書き方によっては置き換わりません。はじめての方の書類は、置き換える前にここで登録してください。'),
+    el('div',{class:'form'},el('span',{},'区分'),kind,el('span',{},'氏名'),name,el('span',{},'呼び名'),alias),
+    el('div',{class:'bar'},el('button',{class:'btn primary small',onclick:go2},'氏名一覧に登録する')));
+}
+// 前の方の残りを脇によけた知らせ（改善12 No.44）
+function asideBox(){const a=S.last&&S.last.aside;if(!a)return null;
+  const who=(a.users||[]).map(u=>'【'+u+'】').join('');const parts=[];if(a.nStage)parts.push('置き換え済みファイル '+a.nStage+'件');if(a.nSrc)parts.push('保留のファイル '+a.nSrc+'件');
+  return el('div',{class:'asidebox',id:'asidebox'},el('span',{},'前の方（'+who+'）の'+parts.join('と')+'を、脇によけました。',el('br'),el('small',{class:'note'},'マスキング作業＼_前の方の残り に移しました（消していません）。まだ使うなら「戻す」を押してください。')),
+    el('button',{class:'btn light small',id:'asideback',onclick:()=>act(async()=>{const r=await post('/api/aside/restore',{id:a.id});msg('ok',r.ok)},'戻しています…')},'戻す'))}
+function kindOf(n){n=n.toLowerCase();return n.endsWith('.pdf')?'PDF（読み取ってWordにします）':n.endsWith('.docx')?'Word':'Excel'}
+async function runMask(){await act(async()=>{const r=await post('/api/mask');decReset();const ok=r.files.filter(f=>f.status==='ok').length,hold=r.files.length-ok;msg(hold?'ng':'ok',hold?`置き換えました。確かめてほしい所があるファイルが ${hold} 件あります（下の橙色）。`:`置き換えました（${ok}件）。内容を確かめて、下の「OK・AIに渡す」へ進んでください。`);go('p2')},'置き換えています…（PDFは1ページにつき数秒かかります）')}
+function segs(line){return el('div',{class:'line'},...line.map(s=>s.c==='rep'?el('span',{class:'rep'},dx(s.t),el('small',{},'（'+dx(s.o)+'）')):s.c==='sus'?el('span',{class:'sus'},dx(s.t)):dx(s.t)))}
+// 画面に出すときだけ、Excelのセル内改行（_x000a_・_x000d_）と改行を「／」に見せる（改善13 No.23。送る値は変えない）
+function dx(t){t=String(t==null?'':t);const e=t.includes('_x00');t=t.replace(/_x0009_/g,' ').replace(/(?:_x000[aAdD]_|\r\n|\r|\n)+/g,'／');
+  // 前後の文が印の途中で切れているとき（「…／_x00」）は、切れた印の残りを見せない
+  return e?t.replace(/_(?:x[0-9a-fA-F]{0,4})?$/,'').replace(/^[0-9a-fA-F]{0,4}_(?=／)/,''):t}
+// 候補の中身が、Excelの改行・タブの印（_x000D_・_x000A_・_x0009_ など）と空白だけか
+function escOnly(w){return /_x00[0-9a-fA-F]{2}_/.test(w||'')&&/^(?:_x00[0-9a-fA-F]{2}_|\s)+$/.test(w||'')}
+// 住所の入力欄の見せ方：登録時（cleanAddr）と同じく、改行・タブ・｜を空白1つに、続いた空白は1つに
+function cleanAddrView(t){return String(t==null?'':t).replace(/_x000[aAdD9]_/g,' ').replace(/\r\n|\n|\r|\t|｜/g,' ').split(' ').filter(x=>x!=='').join(' ')}
+function nameKey(s){return s.key&&s.key.startsWith('n:')?s.key.slice(2):(s.name||s.word||'').replace(/[\s　]/g,'')}
+// 住所の箱の鍵（同じ住所は都道府県の有無を問わず1つの箱に。現場試験 T1）
+function akey(s){return s.key&&s.key.startsWith('a:')?s.key:'a:'+(s.reg||s.word)}
+// ---- ②の橙の箱：押すたびに置き換え直さない（改善14 指摘帳15） ----
+// 登録・除外・通すボタンは、氏名一覧への書き込みだけをして、その場では置き換え直さない（箱は「✓」に変わる。同じ語の箱もまとめて）。
+// 残りの箱がすべて判断済みになったら、自動で1回だけ置き換え直す。途中でも「まとめて置き換え直す」で置き換え直せる。
+// 書いた件数（PEND）はパネル側（last.json）にも残るので、置き換え直す前にパネルを閉じても、登録・除外は氏名一覧に残り、件数も残る。
+let DECIDED=new Map(),DEC_AT=null,PEND=0,AUTO=false,REDO=false,AUTO_SIG='',NOGROUP=new Set(),VERDONE=null;
+function decReset(){DECIDED=new Map();DEC_AT=S.last&&S.last.at;AUTO=false;REDO=false}
+function decSync(){const at=S.last&&S.last.at;if(at!==DEC_AT)decReset();PEND=(S.last&&S.last.pend)||0}
+// decMark: 条件に合う箱を「判断済み」にする（再描画しても判断済みのまま）
+function decMark(pred,text,extra){for(const b of [...document.querySelectorAll('.ask[data-key]')].filter(pred)){b.classList.add('decided');b.replaceChildren(...[el('div',{class:'added'},text),extra?extra():null].filter(Boolean));DECIDED.set(b.dataset.key,text)}}
+function decLeft(words,text){for(const b of [...document.querySelectorAll('.exleft')].filter(b=>words.includes(b.dataset.w))){b.classList.add('decided');b.disabled=true;b.textContent=text;DECIDED.set('l:'+b.dataset.w,text)}}
+function undecided(){return [...document.querySelectorAll('.ask[data-dec="1"]:not(.decided)'),...document.querySelectorAll('.exleft:not(.decided)')]}
+function pendUpd(note){for(const b of document.querySelectorAll('.pendbar')){b.style.display=PEND>0&&(S.src.length||S.stage.length)?'':'none';const t=b.querySelector('.pendbtn');if(t)t.textContent='まとめて置き換え直す（氏名一覧の変更 '+PEND+'件を反映）';if(note){const n=b.querySelector('.pendnote');if(n)n.textContent=note}}}
+// 事業所の職員らしい名前をまとめて「その他」に（現場試験 T1）：前後に職種・事業所の語がある名前。チェックを外した方は1人ずつの箱で
+// ownerGroupBox（改善23）：同じ方の書き方違い（三0延0・延0・三武0江 …）を、ボタン1回でまとめてその方の呼び名に足す
+function ownerGroupBox(o,list){
+  const wrap=el('div',{class:'staffbox ownergroup'});
+  const cbs=list.map(c=>el('input',{type:'checkbox',checked:true,onchange:()=>upd()}));
+  const btn=el('button',{class:'btn primary ownergroupbtn'});
+  function upd(){const n=cbs.filter(x=>x.checked).length;btn.textContent='チェックした '+n+' つを「'+o.name+'」さんの呼び名に足す';btn.disabled=!n}
+  btn.onclick=async()=>{const on=list.filter((c,i)=>cbs[i].checked);list.forEach((c,i)=>{if(!cbs[i].checked)NOGROUP.add(c.k)});btn.disabled=true;let done=0,last=null;
+    try{for(const c of on){S=await post('/api/state');const f=(S.family||[]).find(x=>x.row===o.row&&x.name===o.name)||(S.family||[]).find(x=>x.kind===o.kind&&x.name===o.name)||o;
+        last=await post('/api/names/alias',{old:f,word:c.s.fix});done++;DECIDED.set(c.k,'✓ 「'+dx(c.s.fix)+'」を '+o.name+' さんの呼び名に足しました')}
+      S=await post('/api/state');if(last&&last.pend!=null)PEND=+last.pend;render();await afterDec(last,'✓ '+done+' つを '+o.name+' さんの呼び名に足しました')}
+    catch(e){alert(e.message);render()}};
+  wrap.append(el('b',{},'「'+o.name+'」さん（'+o.kind+'）の書き方違いのようです（'+list.length+' つ）'),
+    el('div',{class:'note'},'伏せ字や読み取りで化けた字で、字の合う方が「'+o.name+'」さんだけの書き方です。ボタン1回で全部その方の呼び名に足し、次からは自動で記号になります。別の方の書き方がまじっていたら、チェックを外してください（外したものは1つずつの箱に出ます）。'),
+    el('div',{class:'staffrows'},...list.map((c,i)=>el('label',{class:'staffrow'},cbs[i],' '+dx(c.s.fix),el('small',{class:'note'},'　'+dx(c.s.context))))),
+    el('div',{class:'bar'},btn));upd();return wrap}
+function staffBox(list){
+  if(list.length<2)return null;
+  const wrap=el('div',{class:'staffbox',id:'staffbox'});
+  const btn=el('button',{class:'btn primary staffbtn',id:'staffbtn'});
+  // 自分の事業所と同じ姓の方は、チェックを外し、この箱の「自分の事業所の職員（除外）」で済ませる（下の1人ずつの箱は出さない。チェックを入れ直せば「その他」に）
+  const cbs=list.map(h=>el('input',{type:'checkbox',class:'staffcb',checked:!h.self,'data-self':h.self?'1':'','data-key':'n:'+nameKey(h),'data-w':h.name,onchange:()=>upd()}));
+  function upd(){const n=cbs.filter(c=>c.checked).length;btn.textContent='チェックした '+n+' 人を「その他」に登録';btn.disabled=!n;staffSync()}
+  btn.onclick=async()=>{const on=cbs.filter(c=>c.checked);const words=on.map(c=>c.dataset.w),keys=on.map(c=>c.dataset.key);
+    try{const r=await post('/api/names/addmany',{words,kind:'その他'});decMark(b=>keys.includes(b.dataset.key),'✓ 「その他」に登録しました');
+      wrap.replaceChildren(el('div',{class:'added'},'✓ '+r.ok));staffSync();await afterDec(r,'✓ '+r.ok)}catch(e){alert(e.message)}};
+  wrap.append(el('b',{},'事業所の職員らしい名前（'+list.length+'人）'),
+    el('div',{class:'note'},'前後に職種や事業所の名前がある方です。まとめて「その他」に登録できます。家族・利用者の方が入っていたら、チェックを外してください（外した方は下の箱で1人ずつ）。'),
+    el('div',{class:'staffrows'},...list.map((h,i)=>el('label',{class:'staffrow'},cbs[i],' '+dx(h.name),h.self?el('small',{class:'note'},'（自分の事業所の職員と同じ姓）'):null,
+      h.self?el('button',{class:'btn small light selfex',onclick:e=>{e.preventDefault();cbs[i].checked=false;upd();regWord('/api/namelist',{word:h.orig||h.name,kind:'除外'},'n:'+nameKey(h)).then(()=>{e.target.closest('label').replaceChildren(el('span',{class:'added'},'✓ 「'+dx(h.name)+'」は自分の事業所（除外）に登録しました'))})}},'自分の事業所の職員（除外）'):null,
+      el('small',{class:'note'},'　'+dx(h.context))))),
+    el('div',{class:'bar'},btn));upd();return wrap}
+// staffSync（改善23）：職員の箱でチェックしている方は、下の1人ずつの箱を出さない（同じ名前の箱を2つ出さない）
+function staffSync(){const on=new Set([...document.querySelectorAll('.staffcb')].filter(c=>c.checked||c.dataset.self==='1').map(c=>c.dataset.key));
+  for(const b of document.querySelectorAll('.ask[data-key]'))if(!b.classList.contains('decided'))b.style.display=on.has(b.dataset.key)?'none':''}
+// 最初から見える説明（上書きしない。現場試験 U2・T2）
+function howBox(){return el('div',{class:'howbox',id:'howbox'},el('div',{},'押すたびには置き換え直しません。',el('b',{},'残りの箱をすべて押すと、自動で1回だけ置き換え直します'),'（途中で置き換え直すときは「まとめて置き換え直す」）。'),
+  el('div',{class:'note',style:'margin-top:4px'},'よその事業所の職員・ほかの利用者・知人は「その他」、自分の事業所の職員は「除外」（除外には「様」「さん」を付けず、書類のとおりの字で）。伏せ字・化けた字の名前は、その方のボタンを押すと呼び名に入り、次から自動で記号になります（〇・○・O・0・＊ の違いも同じに扱います）。利用者・家族の住所は「住所として置き換える」（人には結び付けず【住所001】のような記号。郵便番号・建物名・部屋番号も1つに）、事業所などAIに渡してよい住所は「除外」。'))}
+async function afterDec(r,note){if(r&&r.pend!=null)PEND=+r.pend;pendUpd(note);const any=S.src.length||S.stage.length;
+  // 残りの箱がすべて判断済みなら、自動で1回だけ置き換え直す
+  // 書いたものがなくても、登録済みだった箱（REDO）・読み直したあとの登録済みの箱があれば置き換え直す（改善23）
+  if(AUTO||(PEND<=0&&!REDO&&!knownHeld())||!any||route()[0]!=='p2'||undecided().length)return;
+  const sig=heldSig();if(PEND<=0&&sig===AUTO_SIG)return; // 置き換え直しても同じなら、くり返さない
+  AUTO_SIG=sig;
+  AUTO=true;await remask('✓ 確かめる所をすべて判断しました（登録・除外 '+PEND+'件）')}
+// knownHeld：保留のファイルに、いま登録済みの箱（✓）だけが残っているか
+function knownHeld(){const fs=(S.last&&S.last.files)||[];return fs.some(f=>f.status==='held'&&(f.suspects||[]).length&&(f.suspects||[]).every(x=>x.known))}
+function heldSig(){return ((S.last&&S.last.files)||[]).filter(f=>f.status==='held').map(f=>f.name+':'+(f.suspects||[]).map(x=>x.word).join('|')).join('/')}
+function pendBar(pos){return el('div',{class:'pendbar',id:'pendbar-'+pos,style:(PEND>0&&(S.src.length||S.stage.length)?'':'display:none')},
+  el('div',{class:'pendnote note'},'氏名一覧を変えました（登録・除外・直す・まとめる。まだ置き換え直していません）'),
+  el('button',{class:'btn primary pendbtn',onclick:()=>remask('✓ 氏名一覧の変更を反映しました')},'まとめて置き換え直す（氏名一覧の変更 '+PEND+'件を反映）'))}
+// regWord: 氏名一覧に1語書く（区分）。書けたら、同じ key の箱をまとめて「✓」にする
+async function regWord(url,body,key,okText){try{const r=await post(url,body);
+    // すでに登録済みだったときも「✓」（登録はあるので、置き換え直せば記号になる。改善23）
+    decMark(b=>b.dataset.key===key,r.already?'✓ すでに氏名一覧に登録されています（置き換え直すと反映します）':'✓ '+(okText||r.ok));if(r.already)REDO=true;await afterDec(r,r.ok)}catch(e){alert(e.message)}}
+// susKey: 箱の鍵（同じ鍵の箱は1つにまとめ、「✓」もまとめて付ける）
+function susKey(s){if(escOnly(s.word))return 'e:'+s.word;if(s.kind==='name')return 'n:'+nameKey(s);if(s.kind==='addr')return akey(s);
+  const nb=/すぐ[前後]に漢字「([^」]+)」/.exec(s.reason||'');if(nb)return 'b:'+nb[1]+(s.part&&s.fix?'|'+s.fix:'');if(s.ex&&/^(8けた|生年月日らしき日付)/.test(s.reason||''))return 'x:'+s.ex;return 'o:'+s.word}
+function suspectBox(s){
+  const box=el('div',{class:'ask'});box.fileUsers=s.fileUsers||[];
+  const finish=(key,dec)=>{box.dataset.key=key;box.dataset.ex=s.ex||'';
+    // すでに氏名一覧にある語（現場試験 T1）：最初から「✓ 登録済み」。判断の数に入れない
+    if(s.known&&!escOnly(s.word)){box.classList.add('decided','known');box.replaceChildren(el('div',{class:'added'},'✓ 「'+dx(s.name||s.word)+'」は'+s.known));return box}
+    if(dec)box.dataset.dec='1';
+    if(DECIDED.has(key)){box.classList.add('decided');box.replaceChildren(el('div',{class:'added'},DECIDED.get(key)))}return box};
+  if(escOnly(s.word)){
+    // 改行の印だけ（改善13 No.23 差し戻し）：止まる判定はそのまま。画面で分かるようにして、1回押しで「除外」に登録する
+    const key='e:'+s.word;
+    box.classList.add('escbox');box.dataset.w=s.word;
+    box.append(el('div',{class:'q'},'セルの中の改行の印です（個人情報ではありません）'),el('div',{class:'note'},'前後：'+dx(s.context)),
+      el('div',{class:'row',style:'margin-top:8px'},el('button',{class:'btn small primary escpass',onclick:()=>regWord('/api/namelist',{word:s.ex||s.word,kind:'除外'},key,'改行の印を通すように登録しました')},'改行の印なので通す')));
+    return finish(key,true);
+  }
+  if(s.read&&s.fix){
+    // フリガナの欄の名前の読み（改善27）：このファイルの利用者のボタンで、その方の呼び名に足す。この画面のまま片づく
+    const key='o:'+s.word;
+    box.classList.add('readbox');
+    box.append(el('div',{class:'q'},'「'+dx(s.fix)+'」は、フリガナの欄にある名前の読みです（記号になっていません）'),el('div',{class:'note'},'前後：'+dx(s.context)),
+      ownerPick(s,box,key,'だれの名前の読みですか？'),
+      el('div',{class:'row',style:'margin-top:8px'},el('button',{class:'btn small light readno',onclick:()=>regWord('/api/namelist',{word:s.fix,kind:'除外'},key)},'名前の読みではない（通す）')));
+    return finish(key,true);
+  }
+  if(s.kind==='name'&&s.garbled&&s.fix){
+    // 伏せ字・化けた字の名前（改善22）：だれの名前かをボタン1回で。新しい方としての登録は、たたんだ欄に
+    const key='n:'+nameKey(s);
+    const inp=el('input',{value:dx(s.name)});
+    const add=k=>regWord('/api/namelist',{word:inp.value===dx(s.name)?(k==='除外'&&s.orig?s.orig:s.name):inp.value,kind:k},key);
+    box.classList.add('fusebox');
+    const what=/^氏名一覧の方と1字だけ違う/.test(s.reason||'')?'は、氏名一覧の方と1字だけ違う名前です（読み取りで字が化けたかもしれません）':s.part?'は、名前の一部が化けて残った語です':'は、伏せ字（〇などで隠した字）か、読み取りで化けた字の名前です';
+    box.append(el('div',{class:'q'},'「'+dx(s.fix||s.word)+'」'+what+(s.more?'（同じ書き方がほかに '+s.more+' か所）':'')),el('div',{class:'note'},'前後：'+dx(s.context)),
+      ownerPick(s,box,key,'だれの名前ですか？'),
+      el('div',{class:'row',style:'margin-top:8px'},el('button',{class:'btn small light fuseex',onclick:()=>add('除外')},'利用者・家族の名前ではない（除外）')),
+      el('details',{style:'margin-top:8px'},el('summary',{},'氏名一覧にまだいない方のとき（新しく登録する）'),
+        el('div',{class:'note'},'正しい字が分かれば、下の欄を正しい字に直してから登録してください。'),
+        el('div',{class:'row',style:'margin:8px 0'},el('span',{},'氏名一覧に書く語：'),inp),
+        el('div',{class:'row'},el('button',{class:'btn small primary',onclick:()=>add('利用者')},'利用者'),el('button',{class:'btn small primary',onclick:()=>add('家族')},'家族'),el('button',{class:'btn small primary',onclick:()=>add('その他')},'その他（事業所の職員・ほかの利用者・知人など）'))));
+    return finish(key,true);
+  }
+  if(s.kind==='name'){
+    const key='n:'+nameKey(s);
+    const inp=el('input',{value:dx(s.name)});
+    // 続柄のすぐ後ろの名前（「長男 一郎」）：ファイルの利用者が1人なら、その方の姓を足した形を入れておき、「家族」を先頭に（改善23）
+    const rel=/続柄/.test(s.reason||'');let pre='';
+    if(rel&&!/[ 　]/.test(s.name)&&(s.fileUsers||[]).length===1){const u=(S.family||[]).find(f=>f.code===s.fileUsers[0]);if(u){const sur=u.name.split(/[ 　]/)[0];if(sur&&sur!==u.name){pre=sur+' '+dx(s.name);inp.value=pre}}}
+    // 「除外」は書類に書かれているとおりの字で（入力欄のスペースは、姓と名で登録するときのためのもの。T2）
+    const add=k=>regWord('/api/namelist',{word:k==='除外'?(s.orig||s.name):(inp.value===dx(s.name)?s.name:inp.value),kind:k},key);
+    const kb=k=>el('button',{class:'btn small primary',onclick:()=>add(k)},k==='その他'?'その他（事業所の職員・ほかの利用者・知人など）':k);
+    if(s.place){
+      // 事業所名・地名の形（「ステーションさくら草」）：「名前ではない（除外）」を先頭に（改善23 E1）
+      box.append(el('div',{class:'q'},'この「'+dx(s.place)+'」は、人の名前ですか？（「'+dx(s.word)+'」の中）'),el('div',{class:'note'},'前後：'+dx(s.context)),
+        el('div',{class:'note'},'氏名一覧の方の名前「'+dx(s.place)+'」と同じ字ですが、事業所名・地名の形で書かれているので、記号にしていません。'),
+        el('div',{class:'row',style:'margin-top:8px'},el('button',{class:'btn small primary placeex',onclick:()=>add('除外')},'名前ではない（事業所名・地名など。除外）'),kb('その他')),
+        s.fix?ownerPick(s,box,key,'登録済みの方の名前なら（その方の呼び名に足す）：',true):'');
+      return finish(key,true);
+    }
+    box.append(el('div',{class:'q'},'「'+dx(s.word)+'」は、人の名前ですか？'+(s.more?'（同じ名前がほかに '+s.more+' か所'+(s.files&&s.files.length>1?'・'+s.files.length+'ファイル':'')+'）':'')),el('div',{class:'note'},'前後：'+dx(s.context)),
+      s.garbled?el('div',{class:'warnbox garble'},'⚠ 読み取りで字が化けた名前かもしれません。正しい字に直してから登録してください（下の欄の「'+dx(s.name)+'」は化けた字のままです）。すでに登録済みの方なら、化けた書き方をその方の「呼び名」に書き足すと、次から記号になります。',aliasAdder(s.name,box,'化けた書き方「'+dx(s.name)+'」を →')):'',
+      !s.garbled&&/^(氏名欄|日付)/.test(s.reason)?el('div',{class:'note'},dx(s.reason)):'',
+      s.part&&s.fix?ownerPick(s,box,key,'登録済みの方の書き方違いなら（別の方なら下で登録）：',true):'',
+      el('div',{class:'row',style:'margin:8px 0'},el('span',{},'氏名一覧に書く語：'),inp),
+      el('div',{class:'note small namesp'},'分かれば姓と名の間にスペース（直さずに押しても、名前は記号になるか、橙で止まります）'),
+      pre?el('div',{class:'note small'},'利用者「'+pre.split(' ')[0]+'」さんのご家族として、姓を足した形を入れてあります（違えば直してください）'):'',
+      // 自分の事業所の職員（除外に登録済みの方）と同じ姓なら、「自分の事業所の職員（除外）」を先頭に（改善23 F1）
+      s.self?el('div',{class:'row'},el('button',{class:'btn small primary selfex1',onclick:()=>add('除外')},'自分の事業所の職員（除外）'),kb('その他'),kb('利用者'),kb('家族')):
+      el('div',{class:'row'},...(s.staff&&!rel?[kb('その他'),kb('利用者'),kb('家族')]:[...(rel?[kb('家族'),kb('利用者')]:[kb('利用者'),kb('家族')]),kb('その他')]),el('button',{class:'btn small light',onclick:()=>add('除外')},'利用者・家族の名前ではない（除外）')));
+    return finish(key,true);
+  }else if(s.kind==='addr'){
+    // 住所（改善6）：人に結び付けず【住所NNN】にする。同じ住所の箱はまとめて「登録済み」にする
+    const reg=s.reg||s.word,key=akey(s);
+    box.dataset.reg=reg;
+    const inp=el('input',{value:cleanAddrView(reg),class:'addrinp',style:'width:100%'});
+    box.classList.add('addrbox');
+    box.append(el('div',{class:'q'},'「'+dx(s.word)+'」は住所のようです'+(s.more?'（同じ住所がほかに '+s.more+' か所）':'')),el('div',{class:'note'},'前後：'+dx(s.context)),
+      el('div',{class:'row',style:'margin:8px 0;align-items:center'},el('span',{},'置き換える住所：'),inp),
+      el('div',{class:'row'},el('button',{class:'btn small primary addrreg',onclick:()=>regWord('/api/addr/add',{word:inp.value},key)},'住所として置き換える'),el('button',{class:'btn small light',onclick:()=>regWord('/api/namelist',{word:s.word,kind:'除外'},key)},'事業所などの住所（除外）'),el('button',{class:'btn small light',onclick:()=>regWord('/api/namelist',{word:s.word,kind:'除外'},key)},'住所ではない（除外）')),
+      null);
+    return finish(key,true);
+  }else if(s.birth&&(s.fix||s.ex)){
+    // 生年月日の欄の崩れた日付（改善26）：このファイルの利用者のボタンで、その方の呼び名に足す。この画面のまま片づく
+    const key='o:'+s.word;
+    box.classList.add('birthbox');
+    box.append(el('div',{class:'q'},s.fix?'「'+dx(s.fix)+'」は、生年月日の欄にある日付です（読み取りが崩れて、記号になっていません）':s.part?'「'+dx(s.ex)+'」は、生年月日の欄にある日付の一部です（年・月だけ、元号がない など）':'「'+dx(s.ex)+'」は、生年月日の欄にあります（日付の形ではありません）'),el('div',{class:'note'},'前後：'+dx(s.context)),
+      s.fix?ownerPick(s,box,key,'だれの生年月日ですか？'):null,
+      s.fix&&/[\/／]/.test(s.fix)?el('div',{class:'note'},'「/」の入った日付は、呼び名ではなく氏名一覧の「その他」に入ります（どちらでも次から記号になります）。'):null,
+      s.part?el('div',{class:'note'},'日付の一部は、呼び名に足すと、ほかの方の書類の同じ字まで記号になるため、ここでは足せません。生年月日なら、このファイルは「取り消す」で外し、元の書類を確かめてください。生年月日でなければ「通す」を押してください。'):null,
+      el('div',{class:'row',style:'margin-top:8px'},el('button',{class:'btn small '+(s.fix||s.part?'light':'primary')+' birthno',onclick:()=>regWord('/api/namelist',{word:s.fix||s.ex,kind:'除外'},key)},'生年月日ではない（通す）')));
+    return finish(key,true);
+  }else{
+    // 名前のすぐ前後に残った字（R8.9.29）：1回押せば除外に登録。同じ字の箱はまとめて「登録済み」にする
+    const nb=/すぐ[前後]に漢字「([^」]+)」/.exec(s.reason||'');
+    // 箱の鍵：同じ字でも、名前の一部なら足す書き方ごとに分ける（除外は同じ字の箱を全部まとめて「✓」。改善22）
+    const bkey=nb?'b:'+nb[1]+(s.part&&s.fix?'|'+s.fix:''):'';
+    const ex1=nb?el('button',{class:'btn small primary',onclick:async()=>{await regWord('/api/namelist',{word:nb[1],kind:'除外'},bkey);if(box.classList.contains('decided'))decMark(b=>b.dataset.nb===nb[1]&&!b.classList.contains('decided'),'✓ 「'+dx(nb[1])+'」を除外に登録しました')}},'「'+dx(nb[1])+'」は名前の一部ではない（除外）'):null;
+    // 8けた以上の数字（番号でなければ除外。改善12 No.34）
+    const exN=!nb&&s.ex&&/^8けた/.test(s.reason||'')?el('button',{class:'btn small primary exnum',onclick:()=>regWord('/api/namelist',{word:s.ex,kind:'除外'},'x:'+s.ex)},'「'+dx(s.ex)+'」は番号ではない（除外）'):null;
+    // 生年月日らしき日付（改善13 No.46）：生年月日でなければ1回押しで除外に登録（No.34 の「番号ではない」と同じ作り）
+    const exB=!nb&&!exN&&s.ex&&/^生年月日らしき日付/.test(s.reason||'')?el('button',{class:'btn small primary exbirth',onclick:()=>regWord('/api/namelist',{word:s.ex,kind:'除外'},'x:'+s.ex)},'生年月日ではない（通す）'):null;
+    if(nb)box.dataset.nb=nb[1];
+    // 名前の記号のすぐ前後に残った字（改善22）：名前の一部なら、その方の呼び名に足す（ボタン1回）
+    const own=nb&&s.part&&s.fix?ownerPick(s,box,bkey,'「'+dx(nb[1])+'」も名前の一部なら（元の字では「'+dx(s.fix)+'」）：'):null;
+    box.append(el('div',{class:'q'},dx(s.word)+(s.part&&s.fix?'　（元の字では「'+dx(s.fix)+'」）':'')),el('div',{class:'note'},dx(s.reason)),own,el('div',{class:'row',style:'margin-top:8px'},ex1,exN,exB,el('a',{class:'btn small light',href:'#names'},'氏名一覧を開く'),el('a',{class:'btn small light',href:'#work'},'1_元データを開く')));
+    return finish(nb?bkey:(exN||exB)?'x:'+s.ex:'o:'+s.word,!!(ex1||exN||exB));
+  }
+}
+// 赤：残った所・原因と直し方（改善12 No.33・No.36）
+function leftBox(f){
+  const out=[];
+  if(f.lefts&&f.lefts.length){
+    out.push(el('div',{class:'msg ng leftbox'},'× AIには渡していません。置き換えた後も、次の所に残っています：',
+      el('ul',{class:'lefts'},...f.lefts.map(h=>el('li',{},h.loc,h.word?['：',el('span',{class:'lw'},'「'+dx(h.word)+'」')]:null,
+        h.excl&&S.src.includes(f.name)?el('div',{style:'margin-top:4px'},(()=>{const d=DECIDED.get('l:'+h.word);const b=el('button',{class:'btn small light exleft'+(d?' decided':''),'data-w':h.word,disabled:!!d,onclick:()=>excludeMany([h.word],'「'+dx(h.word)+'」は個人情報ではない')},d||'これは個人情報ではない（除外する）');return b})()):null)))));
+  }else if(f.err)out.push(el('div',{class:'msg ng'},f.err));
+  for(const g of f.guides||[])out.push(el('div',{class:'guide','data-kind':g.kind},el('div',{},el('span',{class:'gk'},'【'+g.kind+'】'),' 原因：'+g.cause),el('div',{style:'margin-top:4px;font-weight:700'},'直し方：'),el('ol',{},...g.steps.map(t=>el('li',{},t)))));
+  return out}
+// excludeMany: いくつかの語をまとめて除外に登録する（置き換え直しは、残りが全部判断済みになったとき・まとめてボタンのとき）
+async function excludeMany(words,what,after){try{const r=await post('/api/names/exclude',{words});const done=[...(r.added||[]),...(r.already||[])];
+    decMark(b=>b.dataset.ex&&done.includes(b.dataset.ex),'✓ 除外に登録しました');decLeft(done,'✓ 除外に登録しました');if(after)after(r);
+    await afterDec(r,'✓ '+(what?what+'：':'')+r.ok)}catch(e){alert(e.message)}}
+// よく出る語（職種・地名）をまとめて表示（改善12 No.34 ①）。名字と同じ字のことがあるので自動では除外しない
+function commonBox(list){
+  const words=list.map(s=>s.ex);
+  const bar=el('div',{class:'row',style:'margin-top:8px;display:flex;gap:8px;flex-wrap:wrap'},el('button',{class:'btn small primary',id:'commonex',onclick:()=>excludeMany(words,'よく出る語',r=>bar.replaceChildren(el('div',{class:'added'},'✓ '+r.ok)))},'よく出る語をまとめて除外（'+words.length+'語）'));
+  return el('div',{class:'commonbox',id:'commonbox'},el('b',{},'よく出る語（職種・地名）が '+words.length+' 語あります'),
+    el('div',{class:'cw'},...words.map(w=>el('span',{},dx(w)))),
+    el('div',{class:'note'},'「看護師」「大和」など、書類によく出る語です。名字と同じ字のこともあるので、自動では除外しません。人の名前でなければ、下のボタンで まとめて除外します。'),
+    bar,
+    el('details',{style:'margin-top:8px'},el('summary',{},'1つずつ確かめる（名前かもしれない語があるとき）'),...list.map(s=>suspectBox(s))))}
+// このファイルの残りの橙は全部除外（改善12 No.34 ②）：押す前に件数と語の一覧を出して確かめる
+function allExBox(f){
+  // 生年月日の箱は「全部除外」に入れない（押すと生年月日がAIに渡るため。改善26 試験役 M1）
+  // 名前の箱（伏せ字・化けた字を含む）と住所の箱も入れない（押すと名前・住所がAIに渡るため。改善26 試験役 N1）
+  const ws=[],seen={};let other=0,birth=0,nm=0,ad=0;for(const s of f.suspects||[]){if(s.known)continue;if(s.birth){birth++;continue}if(s.kind==='name'||s.read){nm++;continue}if(s.kind==='addr'){ad++;continue}if(s.ex){if(!seen[s.ex]){seen[s.ex]=1;ws.push(s.ex)}}else other++}
+  if(!ws.length)return null;
+  const wrap=el('div',{class:'allex'});
+  const conf=()=>wrap.replaceChildren(el('div',{class:'allconf'},el('b',{},'次の '+ws.length+' 語を「除外」に登録します。よろしいですか？'),
+    el('div',{style:'margin:6px 0'},ws.map(dx).join('、')),other?el('div',{class:'note'},'除外では消えない確かめる所が '+other+' 件あります（そのまま残ります）。'):null,birth||nm||ad?el('div',{class:'note'},[nm?'名前の箱 '+nm+' 件':'',ad?'住所の箱 '+ad+' 件':'',birth?'生年月日の箱 '+birth+' 件':''].filter(Boolean).join('・')+'は、ここでは除外しません（上のそれぞれの箱で決めてください）。'):null,
+    el('div',{class:'note'},'人の名前がまじっていたら「やめる」を押して、その語だけ上の箱で登録してください。'),
+    el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:8px'},el('button',{class:'btn small light',onclick:()=>wrap.replaceChildren(btn)},'やめる'),el('button',{class:'btn small primary allexyes',onclick:()=>excludeMany(ws,'このファイルの残りの橙を除外',r=>wrap.replaceChildren(el('div',{class:'added'},'✓ '+r.ok)))},'はい、'+ws.length+'語を全部除外する'))));
+  const btn=el('button',{class:'btn small light allexbtn',onclick:conf},'このファイルの残りの橙は全部除外（'+ws.length+'語）');
+  wrap.append(btn);return wrap}
+function p2(v){
+  decSync();
+  v.append(crumb('2 置き換えて確認する'),el('h2',{},'2　置き換えて確認する'),flashBox(),asideBox());
+  const files=(S.last&&S.last.files)||[];
+  if(!files.length){v.append(el('div',{class:'empty'},'まだ置き換えていません。',el('br'),el('a',{href:'#p1'},'1 資料を入れる')))}
+  else{
+    v.append(el('div',{class:'legend'},el('span',{},el('span',{class:'rep'},'緑'),' 記号にしたところ（ ）内は元の名前。この画面にだけ表示'),el('span',{},el('span',{class:'sus'},'橙'),' 確かめてほしいところ')));
+    if(files.some(f=>(f.suspects||[]).length))v.append(howBox());
+    v.append(pendBar('top'));
+    // よく出る語は、全部のファイルを通して上の1つの箱にまとめる
+    const common=[],cSeen={};for(const f of files)if(f.status==='held')for(const s of f.suspects||[]){if(s.common&&s.ex){if(!cSeen[s.ex]){cSeen[s.ex]=s;common.push(s)}}}
+    if(common.length)v.append(commonBox(common));
+    // 同じ名前の「人の名前ですか？」は、全部のファイルを通して1つの箱にまとめる（R8.9.29 注文）
+    const seenN={},seenA={};
+    for(const f of files)for(const s of f.suspects||[]){if(s.kind!=='addr')continue;const k=akey(s);if(seenA[k]){seenA[k].more=(seenA[k].more||0)+1;continue}s.more=0;seenA[k]=s}
+    for(const f of files)for(const s of f.suspects||[]){if(s.kind!=='name')continue;const k=nameKey(s);if(seenN[k]){const h=seenN[k];h.more=(h.more||0)+1;h.staffAny=h.staffAny||s.staff;h.famAny=h.famAny||s.fam;if(!h.files.includes(f.outName||f.name))h.files.push(f.outName||f.name);continue}s.more=0;s.staffAny=!!s.staff;s.famAny=!!s.fam;s.files=[f.outName||f.name];seenN[k]=s}
+    {const sb=staffBox(Object.values(seenN).filter(h=>h.staffAny&&!h.famAny&&!h.known&&!h.garbled&&!(h.common&&cSeen[h.ex])&&!DECIDED.has('n:'+nameKey(h))&&!escOnly(h.word)));if(sb)v.append(sb)}
+    // 同じ方の書き方違い（伏せ字・化けた字）は、1つの箱にまとめてボタン1回で（改善23）
+    const gskip=new Set();
+    // 「前田様」と「前田 健太」が同じ書類にあるとき：フルネームの箱だけ出す（フルネームを登録すると「前田様」も記号になる。改善23）
+    const fulls=Object.values(seenN).filter(h=>!h.known&&/[ 　]/.test(h.name));
+    for(const h of Object.values(seenN))if(!h.known&&!/[ 　]/.test(h.name)&&!h.garbled){const c=fulls.find(x=>x!==h&&x.name.split(/[ 　]/)[0]===h.name&&!DECIDED.has('n:'+nameKey(x)));if(c){h.covered=c.name;gskip.add('n:'+nameKey(h))}}
+    {const cand=[];for(const f of files)for(const s of f.suspects||[]){if(s.kind==='name'&&seenN[nameKey(s)]!==s)continue;if(s.kind==='addr')continue;
+       if(!s.fix||s.known||!(s.owners&&s.owners.length===1)||!(s.garbled||s.part))continue;const k=susKey(s);if(DECIDED.has(k)||NOGROUP.has(k)||cand.some(c=>c.k===k))continue;cand.push({s,k})}
+     const by={};for(const c of cand){const o=c.s.owners[0];(by[o.row+'|'+o.name]=by[o.row+'|'+o.name]||{o,list:[]}).list.push(c)}
+     for(const g of Object.values(by)){if(g.list.length<2)continue;for(const c of g.list)gskip.add(c.k);v.append(ownerGroupBox(g.o,g.list))}}
+    for(const f of files){
+      const shownN=(f.suspects||[]).filter(s=>{if(s.kind==='name')return seenN[nameKey(s)]===s;if(s.kind==='addr')return seenA[akey(s)]===s;return true}).length;
+      const st=f.status==='ok'?el('span',{class:'st ok'},'✓ 渡せます'):f.status==='held'?el('span',{class:'st hold'},shownN?'！ 保留：確かめてほしい所 '+shownN+'件':'！ 保留：同じ名前を上のファイルで確かめてください'):el('span',{class:'st hold',style:'background:var(--ng-soft);color:var(--ng)'},'× 処理できませんでした');
+      const body=el('div',{class:'fbody'});
+      if(f.err||(f.lefts&&f.lefts.length))body.append(...leftBox(f));
+      for(const l of (f.preview||[]).slice(0,40))body.append(segs(l));
+      if(f.status==='ok')body.append(el('div',{class:'note',style:'margin-top:6px'},'記号にした所 '+f.count+'か所'+(f.pdf?'　／　PDF '+f.pages+'ページから読み取り（表の形・手書き・印影は入りません）':'')+(f.media?'　／　画像 '+f.media+'個（画像の中の文字は置き換えられません。目で確認してください）':'')+(f.emptyPages&&f.emptyPages.length?'　／　文字をほとんど読めなかったページ：'+f.emptyPages.join('・'):'')));
+      if(f.poorPages&&f.poorPages.length)body.append(el('div',{class:'warnbox'},'⚠ '+f.poorPages.join('・')+' ページ目は、うまく読み取れなかった可能性があります（FAXのかすれ・手書きなど）。上の文を見て意味が通らなければ、このファイルは「取り消す」を押して、AIに渡さないでください。'));
+      if(f.status==='ok'&&S.stage.includes(f.outName))body.append(el('div',{style:'text-align:right;margin-top:8px'},el('button',{class:'x',onclick:()=>removeFile('stage',f.outName)},'✕ このファイルは渡さない')));
+      if(f.status!=='ok'&&S.src.includes(f.name))body.append(el('div',{style:'text-align:right;margin-top:8px'},el('button',{class:'x',onclick:()=>removeFile('src',f.name)},'✕ このファイルは取り消す')));
+      {
+       let nc=0,ng=0;const nv=[];for(const s of f.suspects){if(f.status==='held'&&s.common&&s.ex&&cSeen[s.ex]){nc++;continue}if(s.kind==='addr'&&seenA[akey(s)]!==s)continue;if(s.kind==='name'&&seenN[nameKey(s)]!==s)continue;if(gskip.has(susKey(s))){if(s.covered)nv.push(s);else ng++;continue}s.fileUsers=f.users||[];body.append(suspectBox(s))}
+       if(ng)body.append(el('div',{class:'note',style:'margin-top:8px'},'書き方違いの名前 '+ng+' か所は、上の「同じ方の書き方違い」の箱にまとめました。'));
+       for(const s of nv)body.append(el('div',{class:'note',style:'margin-top:8px'},'「'+dx(s.word)+'」は、「'+dx(s.covered)+'」を登録すると、姓の記号になります（そちらの箱で決めてください）。'));
+       if(nc)body.append(el('div',{class:'note',style:'margin-top:8px'},'よく出る語 '+nc+' か所は、上の「よく出る語」の箱にまとめました。'));
+       if(f.status==='held'&&S.src.includes(f.name))body.append(allExBox(f))}
+      v.append(el('div',{class:'file'},el('div',{class:'fhead'},el('b',{},f.status==='ok'&&f.outName?f.outName:f.name),st),body));
+    }
+    v.append(pendBar('bottom'));
+    if(files.some(f=>f.status!=='ok')||S.src.length)v.append(el('div',{class:'bar'},el('span',{class:'note'},'直したら押してください（保留のファイルだけ、もう一度置き換えます）'),el('button',{class:'btn light',onclick:runMask,disabled:!S.src.length},'もう一度置き換える')));
+  }
+  sendBox(v);v.append(backBar());
+  if(GOTO_ASK){GOTO_ASK=false;setTimeout(gotoAsk,50)}
+  // 開いたとき・読み直したとき：保留のファイルに登録済み（✓）の箱しか残っていなければ、自動で1回置き換え直す（改善23）
+  staffSync();
+  // パネルの版が変わったら、前の版の結果のままにせず、自動で1回置き換え直す（改善26）
+  if(files.length&&S.last&&S.last.ver!==S.ver&&(S.src.length||S.stage.length)&&VERDONE!==S.last.at){VERDONE=S.last.at;setTimeout(()=>remask('パネルが新しくなったので、新しい版で置き換え直しました'),80);return}
+  if(files.some(f=>f.status==='held')||PEND>0)setTimeout(()=>afterDec(null,'✓ 氏名一覧の変更を反映します'),80);
+}
+function sendBox(v){
+  const users=S.users||[], su=S.stageUsers||[];
+  const fd=S.fixDraft;if(fd&&!F.note){F.user=fd.user||F.user;F.doc=fd.doc||F.doc;F.note=fd.note||''}
+  const pick=F.user&&users.some(u=>u.id===F.user)?F.user:(su.length===1?su[0]:'');
+  // 渡すファイルに出てくる利用者を★で上に（改善23）
+  const uOrd=[...users.filter(u=>su.includes(u.id)),...users.filter(u=>!su.includes(u.id))];
+  const uSel=el('select',{onchange:e=>{F.user=e.target.value;upd()}},el('option',{value:''},'（選んでください）'),...uOrd.map(u=>el('option',{value:u.id,selected:u.id===pick},(su.includes(u.id)?'★ ':'')+u.label)));
+  // 「支援経過記録」は「支援経過（1日分）」と役目が重なるので選択肢から外す（改善12 No.31）。前の依頼を直すときだけ出す
+  const DOCS=['モニタリング表','支援経過（1日分）','ケアプラン','アセスメントシート'];
+  const dSel=el('select',{id:'docsel',onchange:e=>{F.doc=e.target.value;tog()}},...(DOCS.includes(F.doc)?DOCS:[...DOCS,F.doc]).map(d=>el('option',{selected:d===F.doc},d)));
+  const mSel=el('select',{onchange:e=>F.month=e.target.value},...S.months.map(m=>el('option',{value:m,selected:m===(F.month||S.months[1])},m+' 実施分')));
+  const dIn=dateBox({id:'senddate',value:F.date||todayISO(),max:todayISO(),onch:v=>F.date=v});
+  const mLab=el('span',{},'対象の月'),dLab=el('span',{},'支援経過の日付');
+  // ③の聞く欄を書類に合わせる（改善12 No.30・39）：ケアプランは作成日と適用開始日、アセスメントシートは作成日（実施日）
+  const mkIn=dateBox({id:'makedate',value:F.made||todayISO(),onch:v=>F.made=v}),stIn=dateBox({id:'startdate',value:F.start||todayISO(),onch:v=>F.start=v}),stAs=dateBox({id:'startdate-as',ph:'日付を選んでください',value:F.startAs||'',onch:v=>F.startAs=v}); // アセスメントの適用開始日（予定）は空で始める（入れ忘れを止める。改善28）
+  const mkLab=el('span',{id:'makelab',class:'nw'},'作成日'),stLab=el('span',{class:'nw'},'適用開始日');
+  function tog(){const d=dSel.value,k=d==='支援経過（1日分）',cp=d==='ケアプラン',as=d==='アセスメントシート';
+    mLab.style.display=mSel.style.display=(k||cp||as)?'none':'';dLab.style.display=dIn.wrap.style.display=k?'':'none';
+    mkLab.style.display=mkIn.wrap.style.display=(cp||as)?'':'none';mkLab.textContent=as?'作成日（実施日）':'作成日';stLab.style.display=(cp||as)?'':'none';stIn.wrap.style.display=cp?'':'none';stAs.wrap.style.display=as?'':'none';stLab.textContent=as?'適用開始日（予定）':'適用開始日'}
+  let noteCnt;
+  const note=el('textarea',{id:'sendnote',rows:'5',style:'width:100%;box-sizing:border-box;min-height:7.5em;resize:vertical;flex:1 1 100%;font:inherit',placeholder:'（空欄でかまいません）例：訪看の報告書が2か月分あります',oninput:e=>{F.note=e.target.value;noteCnt&&noteCnt.upd()}});note.value=F.note;
+  noteCnt=noteCounter(()=>note.value,'-note');
+  const noteBox=el('div',{},el('div',{class:'titlerow'},note,voiceBtn(note,'-note')),el('div',{class:'hint',id:'voicehint-note'},'Windowsキー＋H でも声で入力できます。名前は書かないでください'),noteCnt);
+  const conf=el('input',{type:'checkbox',id:'conf',onchange:e=>F.conf=e.target.checked});conf.checked=F.conf;
+  const label=id=>{const u=users.find(x=>x.id===id);return u?u.label:id};
+  const rows=stageRows();
+  const multi=S.stage.length&&(su.length>1||rows.some(x=>x.users.length>1));
+  let info=null;
+  if(S.stage.length&&!multi){
+    if(su.length===0)info=el('div',{class:'warnbox'},'⚠ 渡すファイルの中に、登録済みの利用者の名前が1つも見つかりません。はじめての方の書類なら、先に「1 資料を入れる」の「はじめての利用者・家族の書類を入れるとき」で登録し、このファイルを取り消して入れ直してください。',el('div',{style:'margin-top:8px'},conf,el('label',{for:'conf'},' 書類に利用者の名前が書かれていないことを確かめた（このまま渡す）')));
+    else info=el('div',{class:'note',style:'margin-bottom:8px'},'書類に出てくる利用者：'+label(su[0]));
+  }
+  // 2人以上の利用者が出てくるとき：選んだ利用者 U でファイルごとに判定（改善11の2）
+  const infoWrap=el('div');
+  const mix=el('input',{type:'checkbox',id:'mixok',onchange:e=>{F.mix=e.target.checked;upd()}});mix.checked=!!F.mix;
+  const conf2=el('input',{type:'checkbox',id:'conf',onchange:e=>{F.conf=e.target.checked;upd()}});conf2.checked=F.conf;
+  const barNote=el('span',{class:'note'});
+  const sendBtn=el('button',{class:'btn primary',onclick:()=>send()},'OK・AIに渡す');
+  function judge(U){let a=0,b=0,c=0;const out=rows.map(x=>{const others=x.users.filter(u=>u!==U);const k=!x.users.length?'c':!x.users.includes(U)?'a':others.length?'b':'ok';if(k==='a')a++;if(k==='b')b++;if(k==='c')c++;return {...x,k,others}});return {out,a,b,c}}
+  function upd(){
+    const U=uSel.value;let blocked=S.src.length>0?'「1_元データ」に、まだ置き換えていない・保留のファイルがあります':!S.stage.length?'渡すファイルがありません':'';
+    infoWrap.replaceChildren();
+    if(multi){
+      const j=judge(U);
+      const head=!U?'⚠ 渡すファイルに、2人以上の利用者が出てきます（'+su.map(label).join('、')+'）。どなたの書類として渡すか、下で利用者を選んでください。ファイルごとに、出てくる利用者を出しています。'
+        :j.a?'⚠ 選んだ利用者（'+label(U)+'）が出てこないファイルがあります。別の方のファイルなので、このままでは渡せません。「このファイルは渡さない」で外してください。'
+        :j.b?'⚠ 選んだ利用者（'+label(U)+'）のファイルに、別の利用者の記号も出てきます。中身がこの方の書類で、別の方の名前が少し出るだけなら、下のチェックを入れると渡せます。'
+        :'渡すファイルに出てくる利用者：'+label(U);
+      const box=el('div',{class:'warnbox',id:'multiuser'},head,
+        ...j.out.map(x=>el('div',{class:'muf'+(U&&x.k==='a'?' bad':'')},el('span',{class:'fn'},x.name),
+          el('span',{class:'us'},!x.users.length?'利用者の名前なし':!U?x.users.map(label).join('、'):x.k==='a'?'この方（'+label(U)+'）は出てきません。出てくるのは '+x.users.map(label).join('、')+'（別の方のファイルです）':x.k==='b'?'このファイルには '+x.others.map(label).join('、')+' も出てきます（名前が少し出るだけなら、このまま渡せます）':label(U)),
+          el('button',{class:'x',onclick:()=>removeFile('stage',x.name)},'✕ このファイルは渡さない'))));
+      if(U&&!j.a&&j.b)box.append(el('div',{style:'margin-top:10px'},mix,el('label',{for:'mixok'},' 別の利用者の記号が出てくることを確かめた（この方の書類として渡す）')));
+      if(U&&!j.a&&j.c)box.append(el('div',{style:'margin-top:6px'},conf2,el('label',{for:'conf'},' 利用者の名前がないファイルも、そのまま渡してよいことを確かめた')));
+      infoWrap.append(box);
+      if(!blocked)blocked=!U?'利用者を選んでください':j.a?'選んだ利用者が出てこないファイルがあります。上で外してください':j.b&&!mix.checked?'別の利用者の記号が出てくることを確かめて、チェックを入れてください':'';
+    }else if(info)infoWrap.append(info);
+    barNote.textContent=blocked;sendBtn.disabled=!!blocked;
+  }
+  const send=async()=>{if(!uSel.value){alert('利用者を選んでください');return}
+    {const n=noteCnt.upd();if(n>NOTE_MAX){alert(noteTooLong(n));note.focus();return}}
+    const cp=dSel.value==='ケアプラン',as=dSel.value==='アセスメントシート';
+    if((cp||as)&&!mkIn.value()){alert(mkLab.textContent+'を選んでください');return}if((cp||as)&&!(as?stAs:stIn).value()){alert(stLab.textContent+'を選んでください');return}
+    await act(async()=>{const r=await post('/api/send',{user:uSel.value,doc:dSel.value,month:mSel.value,date:dIn.value(),made:(cp||as)?mkIn.value():'',start:(cp||as)?(as?stAs:stIn).value():'',note:note.value,confirm:multi?conf2.checked:conf.checked,mixOK:mix.checked});lastSend=r;F.user='';F.note='';F.conf=false;F.mix=false;F.date='';F.made='';F.start='';F.startAs='';go('p3done')},'AIに渡しています…')};
+  v.append(el('div',{class:'send'},el('h3',{},'3　AIに渡す'),
+    fd?el('div',{class:'msg info',style:'margin-bottom:8px'},'「AIに直してもらう」の途中です（'+fd.folder+'）。直してほしいことは下の「AIへのひとこと」に入っています。'):null,
+    S.stage.length?el('div',{class:'note',style:'margin-bottom:6px'},'渡すファイル（'+S.stage.length+'件）：'+S.stage.join('、')):null,infoWrap,
+    el('div',{class:'form'},el('span',{},'利用者'),uSel,el('span',{},'書類'),dSel,mLab,mSel,dLab,dIn.wrap,mkLab,mkIn.wrap,stLab,stIn.wrap,stAs.wrap,el('span',{},'AIへのひとこと'),noteBox),
+    el('div',{class:'note',style:'margin-top:6px'},'リストにない利用者は、「1 資料を入れる」の「はじめての利用者・家族の書類を入れるとき」で登録すると出てきます。'),
+    el('div',{class:'bar'},barNote,sendBtn)));
+  upd();
+  tog();
+}
+let lastSend=null;
+const F={user:'',doc:'モニタリング表',month:'',note:'',conf:false,mix:false,date:'',made:'',start:'',startAs:''};
+function p3done(v){
+  v.append(crumb('3 AIに渡しました'),el('h2',{},'✓　AIに渡しました'));
+  if(!lastSend){v.append(el('div',{class:'empty'},'渡した記録がありません。'),el('div',{class:'bar'},el('a',{class:'btn light',href:'#'},'トップへ')));return}
+  const r=lastSend, line='00_指示の依頼を処理して';
+  v.append(el('div',{class:'msg ok'},r.dest+' に '+r.moved.length+'件を置き、00_指示 に依頼（'+r.request+'）を書き置きました。'),
+    el('p',{},'次は、Claudeのチャットで次の一言を伝えてください。'),
+    el('div',{class:'copyline'},el('span',{style:'flex:1'},line),el('button',{class:'btn light small',onclick:async e=>{try{await navigator.clipboard.writeText(line);e.target.textContent='コピーしました'}catch(_){e.target.textContent='選んでコピーしてください'}}},'コピー')),
+    el('div',{class:'bar'},el('a',{class:'btn primary',href:'#'},'トップへ戻る')));
+}
+// 元に戻した結果を、その仕事の欄の中に目立たせて出す（改善7の4）
+let RESTORED=null;
+// まとめて片づける（R8.9.29）
+const SEL={p4:new Set(),p5:new Set(),p6:new Set()};let MULTI=[];
+function selBox(page,folder){const cb=el('input',{type:'checkbox',class:'selcb','data-folder':folder});cb.checked=SEL[page].has(folder);
+  cb.addEventListener('change',()=>{cb.checked?SEL[page].add(folder):SEL[page].delete(folder);updSel(page)});
+  return el('label',{class:'selbox'},cb,'選ぶ')}
+function updSel(page){const n=SEL[page].size;document.querySelectorAll('.multibtn').forEach(b=>{b.disabled=!n;b.textContent='選んだものをまとめて片づける（'+n+'件）'})}
+function multiBar(page,folders,kind){kind=kind||'40';
+  const all=el('button',{class:'btn light small',onclick:()=>{const on=folders.some(f=>!SEL[page].has(f));folders.forEach(f=>on?SEL[page].add(f):SEL[page].delete(f));document.querySelectorAll('.selcb').forEach(c=>c.checked=SEL[page].has(c.dataset.folder));updSel(page)}},'すべて選ぶ／やめる');
+  const go2=el('button',{class:'btn danger small multibtn',disabled:!SEL[page].size,onclick:()=>{MULTI=[...SEL[page]].filter(f=>folders.includes(f));if(!MULTI.length)return;CLEAN_FROM=page;goArg('clean',kind+'/*multi*')}},'選んだものをまとめて片づける（'+SEL[page].size+'件）');
+  return el('div',{class:'multibar'},all,go2,el('span',{class:'note'},'□で選んで、まとめてごみ箱へ移せます（確認の画面が出ます）'))}
+let CLEAN_FROM='';
+function restoredBox(folder){
+  const R=RESTORED;if(!R||R.folder!==folder)return null;
+  return el('div',{class:'rdone'+(R.ng?' ng':'')},
+    el('div',{class:'rh'},R.ng?'⚠ 元に戻しました（一部うまくいかなかったものがあります）':'✓ 元に戻しました'),
+    el('div',{},'2_完成 に置いたファイル：'),
+    el('ul',{},...(R.outs.length?R.outs:['（なし）']).map(n=>el('li',{},n))),
+    R.unknown.length?el('div',{class:'rw'},'戻せなかった記号：'+R.unknown.join(' ')+'（手で直してください）'):null,
+    R.errs.length?el('div',{class:'rw'},'戻せなかったファイル：'+R.errs.join('／')):null,
+    el('div',{style:'margin-top:8px;display:flex;gap:8px;flex-wrap:wrap'},el('button',{class:'btn primary small',onclick:()=>goArg('p6',folder)},'⑥ 完成した書類で開く →'),/^利用者/.test(folder)&&!R.ng?el('button',{class:'btn light small',onclick:()=>goArg('srv',folder)},'サーバーへ保存 →'):null))}
+function p4(v){
+  // v を差し替えて使うので、引数をそのまま使う
+  v.append(crumb('4 届いた合格品'),el('h2',{},'4　届いた合格品'),flashBox());
+  const all=S.passed||[];const items=all.filter(x=>!x.keep),kept=all.filter(x=>x.keep);
+  if(!items.length)v.append(el('div',{class:'empty'},'届いている合格品はありません。'));
+  const card=(it)=>{
+    const rest=async()=>{if(it.restored&&!confirm('すでに元に戻してあります。もう一度戻しますか？'))return;await act(async()=>{const r=await post('/api/restore',{folder:it.folder});let t='2_完成 に置きました：'+r.outs.join('、');if(r.unknown&&r.unknown.length)t+='　※戻せなかった記号：'+[...new Set(r.unknown)].join(' ')+'（手で直してください）';if(r.errs.length)t+='　※戻せなかったファイル：'+r.errs.join('／');RESTORED={folder:it.folder,ng:!!(r.errs.length||(r.unknown&&r.unknown.length)),outs:r.outs||[],unknown:[...new Set(r.unknown||[])],errs:r.errs||[]}},'元に戻しています…')};
+    v.append(el('div',{class:'item'+(RESTORED&&RESTORED.folder===it.folder?' justdone':''),'data-folder':it.folder},restoredBox(it.folder),el('div',{},it.keep?null:selBox('p4',it.folder),el('div',{class:'t'},it.label),
+      el('div',{class:'chips'},...(it.info||[]).map(i=>el('span',{class:'chip '+(i.startsWith('要確認')?'w':'g')},i)),it.restored?el('span',{class:'chip'},'元に戻し済み'):null),
+      el('div',{class:'note',style:'margin-top:6px'},'書類：'+((it.files||[]).join('、')||'（なし）')),
+      el('div',{class:'when'},it.at?el('span',{},'届いた日時：',el('b',{},it.at)):null,it.restoredAt?el('span',{},'元に戻した日時：',el('b',{},it.restoredAt)):null)),
+      el('div',{style:'display:flex;flex-direction:column;gap:8px'},el('button',{class:'btn '+(it.restored?'light':'primary'),onclick:rest},it.restored?'もう一度、元の個人情報に戻す':'記号を名前などの元の個人情報に戻す'),el('button',{class:'btn light small',onclick:()=>goArg('ai40',it.folder)},'判定記録・作業メモを見る'),it.keep?null:el('button',{class:'x',onclick:()=>{CLEAN_FROM='p4';goArg('clean','40/'+it.folder)}},'片づける'))));
+  };
+  for(const k of [...SEL.p4])if(!items.some(x=>x.folder===k))SEL.p4.delete(k);
+  if(items.length)v.append(multiBar('p4',items.map(x=>x.folder)));
+  for(const it of items)card(it);
+  if(items.length>2)v.append(multiBar('p4',items.map(x=>x.folder)));
+  if(kept.length){v.append(el('details',{class:'kept'},el('summary',{},'AIが使う保管品（'+kept.length+'件）…佐藤さんの出番はありません。そのままで大丈夫です'),...kept.map(it=>{const box=el('div',{});const vv=v;v=box;card(it);v=vv;const k=box.firstChild;k.querySelector('.chips')?.append(el('span',{class:'chip'},'保管：'+it.keep));return k})))}
+  v.append(el('p',{class:'note'},'「記号を名前などの元の個人情報に戻す」を押すと、元の名前に戻した書類が 2_完成 に入り、6「完成した書類」に表示されます。1ページ目の評価など、手で入力する欄は作業メモに書いてあります。'),backBar());
+}
+function p5(v){
+  v.append(crumb('5 要相談'),el('h2',{},'5　要相談'),flashBox());
+  const items=S.consult||[];
+  if(!items.length)v.append(el('div',{class:'empty'},'要相談はありません。'));
+  for(const k of [...SEL.p5])if(!items.some(x=>x.folder===k))SEL.p5.delete(k);
+  if(items.length)v.append(multiBar('p5',items.map(x=>x.folder),'50'));
+  for(const it of items)v.append(el('div',{class:'item','data-folder':it.folder},el('div',{},selBox('p5',it.folder),el('div',{class:'t'},it.label),it.at?el('div',{class:'when'},el('span',{},'止まった日時：',el('b',{},it.at))):null,it.memo?el('pre',{class:'memo'},it.memo):el('div',{class:'note'},'相談メモがありません')),el('div',{class:'jobops'},el('button',{class:'btn light small',onclick:()=>goArg('ai50',it.folder)},'メモ・ファイルを見る'),el('button',{class:'btn light small',onclick:()=>goArg('clean','50/'+it.folder)},'片づける'))));
+  v.append(el('p',{class:'note'},'足りない資料を入れ直すときは、1「資料を入れる」から同じ流れで渡してください。対応が済んだ項目は「片づける」を押すと、確認の画面が出てから、ごみ箱へ移せます（あとからごみ箱から戻せます）。'),backBar());
+}
+// 改善28 No.55：完成した書類をダウンロードフォルダへ写す（元のファイルは動かさない・消さない）
+async function dlRun(folder,names,out){
+  if(!names.length){alert('ダウンロードするファイルを選んでください');return}
+  try{busy(true,'ダウンロードフォルダへ写しています…');
+    const r=await post('/api/download',{folder,names});
+    const sv=r.saved,ren=sv.filter(x=>x.saveAs);
+    const head=r.failed.length?(r.n+'件保存しました（'+r.failed.length+'件はできませんでした）'):(r.n===1&&sv.length===1?(sv[0].saveAs||sv[0].name)+' として保存しました'+(sv[0].saveAs?'（同じ名前があったため）':''):r.n+'件保存しました'+(ren.length?'（'+ren.length+'件は同じ名前があったため（2）などを付けました）':''));
+    const opened=el('span',{class:'note dlopened',style:'margin-left:16px;font-size:12px'},'');
+    out.replaceChildren(el('div',{class:'rdone dlresult'+(r.failed.length?' ng':'')},
+      el('div',{class:'rh dlmsg'},head),
+      el('div',{class:'note'},r.dir),
+      r.failed.length?el('div',{class:'rw'},r.failed.map(x=>x.name+'（'+x.note+'）').join('／')):null,
+      el('div',{style:'margin-top:8px'},el('button',{class:'btn light small dlopen',onclick:()=>{openIt('downloadDir','');opened.textContent='開きました';setTimeout(()=>{opened.textContent=''},3000)}},'ダウンロードフォルダを開く'),opened)));
+    const scope=out.closest('.item')||document.getElementById('view');
+    scope.querySelectorAll('.dlcb').forEach(c=>{if(c.checked&&names.includes(c.dataset.name)){c.checked=false;c.dispatchEvent(new Event('change'))}});
+    out.scrollIntoView({block:'nearest'})
+  }catch(e){out.replaceChildren(el('div',{class:'msg ng dlmsg'},e.message))}finally{busy(false)}}
+function dlMultiBar(lst,folder,out){
+  const cbs=()=>[...lst.querySelectorAll('.dlcb')];
+  const btn=el('button',{class:'btn light small dlmulti',disabled:true,onclick:()=>dlRun(folder,cbs().filter(c=>c.checked).map(c=>c.dataset.name),out)},'選んだものをまとめてダウンロード（0件）');
+  const upd=()=>{const n=cbs().filter(c=>c.checked).length;btn.disabled=!n;btn.textContent='選んだものをまとめてダウンロード（'+n+'件）'};
+  cbs().forEach(c=>c.addEventListener('change',upd));
+  return el('div',{class:'dlbar'},btn,el('span',{class:'note'},'□で選んで、ダウンロードフォルダへまとめて写せます'))}
+function p6(v){
+  v.append(crumb('6 完成した書類'),el('h2',{},'6　完成した書類'),flashBox());
+  const jobs=S.doneJobs||[],other=S.doneOther||[];
+  // 改善28 No.55：各ファイルに「ダウンロード」（ダウンロードフォルダへ写す）。2つ以上あるときは、チェックでまとめても。「開く」は今のまま
+  const dlOut=el('div',{class:'dlout'});
+  const row=(d,j,multi,out)=>el('div',{},el('span',{class:'dnw'},multi?el('input',{type:'checkbox',class:'dlcb','data-name':d.name,'aria-label':d.name+' を選ぶ'}):null,el('span',{class:'dn'},el('span',{},d.name,j&&(d.keika||d.keikax)?el('span',{class:'kbadge'},'支援経過（1日分）'):null),d.at?el('span',{class:'when'},el('span',{},'元に戻した日時：',el('b',{},d.at))):null)),
+    el('span',{class:'kact'},el('button',{class:'btn light small dlone','data-name':d.name,onclick:()=>dlRun(j?j.folder:'',[d.name],out)},'ダウンロード'),j&&d.keikax?el('button',{class:'btn primary small keikaxadd',onclick:()=>goArg('keikaxadd',j.folder+'/'+d.name)},'サーバーの支援経過（Excel）に書き足す'):null,j&&d.hyo1?el('button',{class:'btn primary small hyo1add','data-name':d.name,onclick:()=>goArg('hyo1add',j.folder+'/'+d.name)},'カイポケの情報を第1表に入れる'):null,j&&d.keika?el('button',{class:'btn light small keikaadd',onclick:()=>goArg('keikaadd',j.folder+'/'+d.name)},'（古い形）支援経過記録・一覧に書き足す'):null,el('button',{class:'btn light small',onclick:()=>openIt('done',d.name)},'開く')));
+  if(!jobs.length&&!other.length)v.append(el('div',{class:'empty'},'まだありません。'));
+  for(const k of [...SEL.p6])if(!jobs.some(x=>x.folder===k))SEL.p6.delete(k);
+  if(jobs.length)v.append(multiBar('p6',jobs.map(x=>x.folder)));
+  for(const j of jobs){const jout=el('div',{class:'dlout'});const lst=j.files.length?el('div',{class:'files donelist'},...j.files.map(d=>row(d,j,j.files.length>1,jout))):null;
+   v.append(el('div',{class:'item job','data-folder':j.folder},
+    el('div',{},selBox('p6',j.folder),el('div',{class:'t'},j.label),
+      j.restoredAt?el('div',{class:'when'},el('span',{},'元に戻した日時：',el('b',{},j.restoredAt))):null,
+      j.gone?el('div',{class:'note'},'40_合格・確認待ち のフォルダは、もうありません'):null,
+      lst||el('div',{class:'note',style:'margin-top:6px'},'2_完成 に、この仕事の書類はありません（移した・名前を変えた など）'),
+      lst&&j.files.length>1?dlMultiBar(lst,j.folder,jout):null,jout),
+    el('div',{class:'jobops'},j.files.length?el('button',{class:'btn light fixbtn',onclick:()=>goArg('fix',j.folder)},'AIに直してもらう'):null,/^利用者/.test(j.folder)&&j.files.length?el('button',{class:'btn primary',onclick:()=>goArg('srv',j.folder)},'サーバーへ保存'):null,/^利用者/.test(j.folder)?el('button',{class:'btn light otherbtn',onclick:()=>goArg('other',j.folder)},'同じ資料でほかの書類も作る'):null,el('button',{class:'btn light',onclick:()=>goArg('clean','40/'+j.folder)},'片づける'),el('span',{class:'opnote'},'この仕事が済んだら'))))}
+  const olist=el('div',{class:'files donelist'},...other.map(d=>row(d,null,other.length>1,dlOut)));
+  if(other.length)v.append(el('h3',{style:'margin-top:22px'},'どの仕事の書類か分からないもの'),el('p',{class:'note',style:'margin-top:0'},'この版より前に元に戻したもの・元に戻す.exe で戻したもの・手で直したものなどです。「片づける」には入りません。'),
+    olist,other.length>1?dlMultiBar(olist,'',dlOut):null,dlOut);
+  v.append(el('div',{class:'bar'},el('button',{class:'btn light',onclick:()=>openIt('doneDir')},'2_完成 フォルダを開く')),el('p',{class:'note'},'確かめたら、いつもの業務フォルダへコピーしてください。コピーが済んで、この仕事が済んだら「片づける」を押します（確認の画面が出ます。すぐには消えません）。'),backBar());
+}
+// 改善27：⑥ → 同じ資料でほかの書類も作る（そのときAIに渡した資料を、別の書類の仕事にもう一度使う。置き換えのやり直しはいらない）
+function pOther(v,folder){
+  v.append(crumb('同じ資料でほかの書類も作る',['6 完成した書類','p6']),el('h2',{},'同じ資料でほかの書類も作る'),flashBox());
+  fetchInto(v,'/api/other/preview',{folder},pl=>{
+    const out=[];
+    out.push(el('p',{class:'lead'},folder),el('p',{class:'note'},'この仕事でAIに渡した資料（記号に置き換え済み）を、そのまま別の書類にも使います。置き換えのやり直しはいりません。'));
+    if(pl.guessed)out.push(el('div',{class:'warnbox'},'⚠ この仕事の資料がどれか、控えからは分かりませんでした。資料の置き場にあるファイルを全部出しています。使う資料だけに✓を付けてください。'));
+    const box=el('div',{class:'files'});const cks=[];
+    for(const f of pl.files){const c=el('input',{type:'checkbox',id:'ot'+cks.length});c.checked=true;c.dataset.name=f.name;cks.push(c);box.append(el('div',{},el('label',{for:c.id,style:'display:flex;gap:8px;align-items:center'},c,el('span',{},f.name))))}
+    const DOCS=['ケアプラン','アセスメントシート','モニタリング表'].filter(d=>d!==pl.doc).concat([pl.doc]);
+    const dSel=el('select',{id:'otherdoc',onchange:()=>tog()},el('option',{value:''},'（選んでください）'),...DOCS.map(d=>el('option',{value:d},d+(d===pl.doc?'（同じ書類・別の月）':''))));
+    const mSel=el('select',{id:'othermonth'},el('option',{value:''},'（月を選んでください）'),...S.months.map(m=>el('option',{value:m,selected:m===S.months[1]},m+' 実施分')));
+    const mkIn=dateBox({id:'othermade',value:todayISO()}),stIn=dateBox({id:'otherstart',value:todayISO()}),stAs=dateBox({id:'otherstart-as',ph:'日付を選んでください',value:''});
+    const mLab=el('span',{},'対象の月'),mkLab=el('span',{},'作成日'),stLab=el('span',{class:'nw'},'適用開始日');
+    function tog(){const d=dSel.value,cp=d==='ケアプラン',as=d==='アセスメントシート';
+      if(d===pl.doc&&mSel.value===pl.month)mSel.value=''; // 同じ書類なら、月は自分で選ぶ（前の月・同じ月に黙って変えない。改善27 試験役 S1）
+      mLab.style.display=mSel.style.display=(cp||as||!d)?'none':'';mkLab.style.display=mkIn.wrap.style.display=(cp||as)?'':'none';mkLab.textContent=as?'作成日（実施日）':'作成日';stLab.style.display=(cp||as)?'':'none';stIn.wrap.style.display=cp?'':'none';stAs.wrap.style.display=as?'':'none';stLab.textContent=as?'適用開始日（予定）':'適用開始日'}
+    let noteCnt;
+    const note=el('textarea',{id:'othernote',rows:'5',style:'width:100%;box-sizing:border-box;min-height:7.5em;resize:vertical;flex:1 1 100%;font:inherit',placeholder:'空欄でよい。例：3表も入れて',oninput:()=>noteCnt&&noteCnt.upd()});
+    noteCnt=noteCounter(()=>note.value,'-other');
+    const errBox=el('div',{});const again=el('input',{type:'checkbox',id:'otheragain'});
+    const goBtn=el('button',{class:'btn primary',id:'othergo',onclick:async()=>{
+      const files=cks.filter(c=>c.checked).map(c=>c.dataset.name),d=dSel.value,cp=d==='ケアプラン',as=d==='アセスメントシート';
+      if(!d){alert('作る書類を選んでください');return}
+      if(!files.length){alert('使う資料に✓を付けてください');return}
+      {const n=noteCnt.upd();if(n>NOTE_MAX){alert(noteTooLong(n));note.focus();return}}
+      if((cp||as)&&!mkIn.value()){alert(mkLab.textContent+'を選んでください');return}if((cp||as)&&!(as?stAs:stIn).value()){alert(stLab.textContent+'を選んでください');return}
+      if(!cp&&!as&&!mSel.value){errBox.replaceChildren(el('div',{class:'msg ng otherng'},'対象の月を選んでください'));return}
+      try{busy(true,'資料を写して頼んでいます…');
+        const r=await post('/api/other/send',{folder,files,doc:d,month:mSel.value,made:(cp||as)?mkIn.value():'',start:(cp||as)?(as?stAs:stIn).value():'',note:note.value,again:again.checked});
+        S=await post('/api/state');msg('ok','✓ '+r.ok);go('p6')}
+      catch(e){errBox.replaceChildren(el('div',{class:'msg ng otherng'},e.message),/もう頼んであります/.test(e.message)?el('div',{class:'row',style:'margin:6px 0'},again,el('label',{for:'otheragain'},' それでも、もう一度頼む')):null);errBox.scrollIntoView({block:'center'})}
+      finally{busy(false)}}},'この資料で頼む →');
+    out.push(el('h3',{},'使う資料'),box,
+      el('h3',{},'作る書類'),el('div',{class:'row',style:'gap:8px;align-items:center;flex-wrap:wrap'},dSel,mLab,mSel,mkLab,mkIn.wrap,stLab,stIn.wrap,stAs.wrap),
+      el('h3',{},'AIへのひとこと'),el('div',{class:'titlerow'},note,voiceBtn(note,'-other')),el('div',{class:'hint',id:'voicehint-other'},'名前は書かないでください'),noteCnt,
+      el('p',{class:'note'},'足したい資料があるときは、このあと ①「資料を入れる」から、同じ方・同じ書類で渡してください。AIが同じ仕事の資料としてまとめて使います。'),
+      errBox,el('div',{class:'bar'},el('a',{class:'btn light',href:'#p6'},'やめる'),goBtn));
+    v.append(...out);tog()});
+}
+// 改善10：⑥ → AIに直してもらう（2_完成 の書類を 1_元データ に写して、②置き換え→③AIに渡す へ）
+function pFix(v,folder){
+  v.append(crumb('AIに直してもらう',['6 完成した書類','p6']),el('h2',{},'AIに直してもらう'),flashBox());
+  const j=(S.doneJobs||[]).find(x=>x.folder===folder);
+  if(!j||!j.files.length){v.append(el('div',{class:'msg ng'},'この仕事の書類が ⑥ に見つかりません。'),backBar(el('a',{class:'btn light',href:'#p6'},'← 6 完成した書類へ')));return}
+  if(S.src.length)v.append(el('div',{class:'warnbox'},'⚠「1_元データ」に、まだ置き換えていないファイルがあります（'+S.src.join('、')+'）。いっしょに置き換えられ、いっしょにAIに渡ります。別の方の書類なら、先に ① で取り消してください。'));
+  v.append(el('p',{class:'lead'},j.label),
+    el('p',{class:'note'},'直してほしい書類に✓を付け、直してほしいことを書いてください。書類は 2_完成 から「1_元データ」に写します（2_完成 の書類はそのまま残ります）。このあと、いつもどおり ② 置き換え → ③ AIに渡す と進みます。Excelで書き足した場合は、保存して閉じてから押してください。'));
+  const box=el('div',{class:'files'});const cks=[];
+  for(const d of j.files){const c=el('input',{type:'checkbox',id:'fx'+cks.length});c.checked=!d.keika;c.dataset.name=d.name;cks.push(c);
+    box.append(el('div',{},el('label',{for:c.id,style:'display:flex;gap:8px;align-items:center'},c,el('span',{},d.name))))}
+  // ③のひとことには「【修正のお願い】」が頭に付いて入るので、その分（8字）も含めて5000字まで
+  const fixText=()=>'【修正のお願い】'+note.value.trim().split(/\s+/).filter(Boolean).join(' ');
+  let noteCnt;
+  const note=el('textarea',{id:'fixnote',rows:5,style:'width:100%',placeholder:'例：2表のショートステイの頻度を「月2回・各3泊4日」にしてください。名前は書かないでください',oninput:()=>noteCnt&&noteCnt.upd()});
+  noteCnt=noteCounter(fixText,'-fix');
+  const go2=async()=>{const files=cks.filter(c=>c.checked).map(c=>c.dataset.name);
+    if(!files.length){alert('直してほしい書類に✓を付けてください');return}
+    if(!note.value.trim()){alert('直してほしいことを書いてください');return}
+    {const n=noteCnt.upd();if(n>NOTE_MAX){alert(noteTooLong(n));note.focus();return}}
+    await act(async()=>{const r=await post('/api/fix/prepare',{folder,files,note:note.value});
+      if(r.user)F.user=r.user;if(r.doc)F.doc=r.doc;F.note=r.note;
+      const r2=await post('/api/mask');const ok=r2.files.filter(f=>f.status==='ok').length,hold=r2.files.length-ok;
+      msg(hold?'ng':'ok',(r.dup.length?'（同じ書類がすでに入っていたので写しませんでした：'+r.dup.join('、')+'）':'')+(hold?`置き換えました。確かめてほしい所があるファイルが ${hold} 件あります（下の橙色）。`:`置き換えました（${ok}件）。直してほしいことは「AIへのひとこと」に入れてあります。確かめて「OK・AIに渡す」を押してください。`));
+      go('p2')},'書類を写して置き換えています…')};
+  v.append(el('h3',{},'直してほしい書類'),box,el('h3',{},'直してほしいこと'),el('div',{class:'titlerow'},note,voiceBtn(note,'-fix')),el('div',{class:'hint',id:'voicehint-fix'},'Windowsキー＋H でも声で入力できます'),noteCnt,
+    el('div',{class:'bar'},el('a',{class:'btn light',href:'#p6'},'やめる'),el('button',{class:'btn primary',id:'fixgo',onclick:go2},'写して置き換える →')));
+}
+// 片づける：確認画面（一覧を見て「ごみ箱へ移す」か「やめる」）
+const PLACE={'30':'30_記入係作業中','40':'40_合格・確認待ち','50':'50_要相談','00':'00_指示','done':'1_元データ＼処理済み','out':'2_完成','report':'確認リスト'};
+function pClean(v,arg){
+  const i=arg.indexOf('/');const kind=i<0?'':arg.slice(0,i),folder=i<0?'':arg.slice(i+1);
+  const back=kind==='50'?['5 要相談','p5']:(CLEAN_FROM==='p4'?['4 届いた合格品','p4']:['6 完成した書類','p6']);
+  const multi=folder==='*multi*';
+  if(multi&&!MULTI.length){v.append(el('div',{class:'msg info'},'選んだものがありません。'),backBar());return}
+  v.append(crumb('片づける',back),el('h2',{},'片づける（ごみ箱へ移す）'),flashBox());
+  fetchInto(v,multi?'/api/clean/preview-multi':'/api/clean/preview',multi?{kind,folders:MULTI}:{kind,folder},pl=>{
+    const items=[];for(const g of pl.groups)for(const it of g.items)items.push({where:it.where,name:it.name});
+    v.append(el('div',{class:'card'},el('h3',{},pl.label),
+      el('p',{style:'margin:4px 0'},pl.total?(multi?'選んだ仕事で使った次の ':'この仕事で使った次の ')+pl.total+' 件を、'+pl.place+' へ移します。まだ何も移していません。':'ごみ箱へ移すものはありません。'),
+      el('div',{class:'okbox'},'あとから Windowsのごみ箱 から戻せます（ごみ箱を開き、戻したいものを右クリック →「元に戻す」）。'),
+      el('div',{class:'note'},'氏名一覧・記号対応表は移しません。「やめる」を押すと、何も変わりません。')));
+    for(const g of pl.groups)v.append(el('div',{class:'card cgroup','data-where':g.where},el('h3',{},g.title,el('span',{class:'chip g'},g.items.length+'件')),
+      el('ul',{class:'clist'},...g.items.map(it=>el('li',{},it.name,it.isDir?[el('span',{class:'note'},'　（フォルダ・中のファイル '+(it.inner||[]).length+'件）'),(it.inner||[]).length?el('details',{},el('summary',{},'中のファイルを見る'),el('ul',{class:'inner'},...it.inner.map(n=>el('li',{},n)))):null]:null)))));
+    if(pl.skipped.length){const n=pl.skipped.reduce((a,x)=>a+x.names.length,0);
+      v.append(el('details',{class:'card skipbox',open:true},el('summary',{},'入れていないもの（'+n+'件）　※ごみ箱へは移しません'),
+        ...pl.skipped.map(x=>el('div',{class:'sk'},el('b',{},x.title),el('div',{class:'note'},x.reason),x.names.length>8?el('details',{},el('summary',{},x.names.length+'件を見る'),el('ul',{class:'clist'},...x.names.map(n=>el('li',{},n)))):el('ul',{class:'clist'},...x.names.map(n=>el('li',{},n)))))))}
+    const run=async()=>{await act(async()=>{const r=await post('/api/clean/run',{id:pl.id,items});
+      if(r.failed.length){msg('ng','ごみ箱へ移したもの：'+r.moved.length+'件。\n移せずに残っているもの：'+r.failed.length+'件\n'+r.failed.map(f=>'・'+PLACE[f.where]+'＼'+f.name+'（'+f.reason+'）').join('\n')+'\nファイルを開いていたら閉じて、もう一度「片づける」を押してください。')}
+      else msg('ok',r.moved.length+'件を '+r.place+' へ移しました。あとからごみ箱から戻せます。');
+      if(multi){(SEL[kind==='50'?'p5':(CLEAN_FROM==='p4'?'p4':'p6')]||new Set()).clear();MULTI=[]}
+      go(back[1])},'ごみ箱へ移しています…')};
+    v.append(el('div',{class:'bar cleanbar'},el('button',{class:'btn light',id:'cleanCancel',onclick:()=>{msg('info','やめました。何も移していません。');go(back[1])}},'やめる'),
+      el('button',{class:'btn danger',id:'cleanRun',disabled:!pl.total,onclick:run},'ごみ箱へ移す（'+pl.total+'件）')));
+  });
+}
+// ---------- そのほかのページ（パネルの中で見る。Excel・エクスプローラーは、ページ内の「ふだんは使わない」ボタンだけ） ----------
+async function fetchInto(v,url,body,fn){const my=RID;const box=el('div',{class:'note'},'読み込んでいます…');v.append(box);
+  try{const r=await post(url,body);if(my!==RID)return;box.remove();fn(r)}catch(e){if(my!==RID)return;box.replaceWith(el('div',{class:'msg ng'},e.message))}}
+function inl(t){const out=[];const re=/(\*\*[^*]+\*\*|`[^`]+`)/g;let p=0,m;while((m=re.exec(t))){if(m.index>p)out.push(t.slice(p,m.index));const x=m[0];out.push(x[0]==='`'?el('code',{},x.slice(1,-1)):el('b',{},x.slice(2,-2)));p=m.index+x.length}if(p<t.length)out.push(t.slice(p));return out}
+// mdRender：マークダウンを textContent だけで組み立てる（HTMLとしては解釈しない）
+function mdRender(text){
+  const d=el('div',{class:'doc'});const L=String(text||'').split('\n');let i=0;let list=null,lt='';
+  const endList=()=>{list=null;lt=''};
+  while(i<L.length){const line=L[i];
+    if(/^\s*```/.test(line)){endList();const buf=[];i++;while(i<L.length&&!/^\s*```/.test(L[i])){buf.push(L[i]);i++}i++;d.append(el('pre',{},buf.join('\n')));continue}
+    let m=line.match(/^(#{1,6})\s+(.*)$/);
+    if(m){endList();d.append(el('h'+Math.min(4,m[1].length),{},...inl(m[2])));i++;continue}
+    if(/^\s*\|.*\|\s*$/.test(line)){endList();const t=el('table');let first=true;
+      while(i<L.length&&/^\s*\|.*\|\s*$/.test(L[i])){const cells=L[i].trim().slice(1,-1).split('|').map(c=>c.trim());
+        if(cells.every(c=>/^:?-{2,}:?$/.test(c))){i++;continue}
+        t.append(el('tr',{},...cells.map(c=>el(first?'th':'td',{},...inl(c)))));first=false;i++}
+      d.append(el('div',{class:'tw'},t));continue}
+    m=line.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/);
+    if(m){const tag=/\d/.test(m[2])?'ol':'ul';if(!list||lt!==tag){list=el(tag);lt=tag;d.append(list)}
+      const item=el('li',{},...inl(m[3]));if(m[1].length>=2)item.style.marginLeft='1.2em';list.append(item);i++;continue}
+    if(/^\s*(---+|\*\*\*+)\s*$/.test(line)){endList();d.append(el('hr'));i++;continue}
+    if(!line.trim()){endList();i++;continue}
+    endList();if(/^>\s?/.test(line)){d.append(el('div',{class:'box'},...inl(line.replace(/^>\s?/,''))));i++;continue}
+    d.append(el('p',{},...inl(line)));i++}
+  return d}
+// safeHTML：使い方.html を、許した要素と文字だけで組み立て直す（スクリプト・リンク・画像・属性は入れない）
+function safeHTML(html){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const OK=new Set(['H1','H2','H3','H4','P','UL','OL','LI','TABLE','THEAD','TBODY','TR','TH','TD','B','STRONG','EM','I','CODE','PRE','BR','HR','DIV','SPAN','SMALL','BLOCKQUOTE','DL','DT','DD','KBD','MARK','SECTION','A','SUP','SUB']);
+  const SKIP=new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','LINK','META','TITLE','NOSCRIPT','TEMPLATE','SVG','MATH','FORM','INPUT','BUTTON','SELECT','TEXTAREA','IMG','VIDEO','AUDIO','CANVAS']);
+  const copy=(src,dst)=>{for(const n of src.childNodes){
+    if(n.nodeType===3){dst.append(document.createTextNode(n.nodeValue));continue}
+    if(n.nodeType!==1||SKIP.has(n.tagName))continue;
+    if(!OK.has(n.tagName)){copy(n,dst);continue}
+    const tag=n.tagName==='A'?'span':n.tagName.toLowerCase();const e=document.createElement(tag);
+    const c=(n.getAttribute('class')||'').split(/\s+/).filter(x=>x==='box'||x==='warn');if(c.length)e.className=c.join(' ');
+    for(const a of ['colspan','rowspan']){const x=n.getAttribute(a);if(x&&/^\d{1,2}$/.test(x))e.setAttribute(a,x)}
+    copy(n,e);dst.append(e)}};
+  const d=el('div',{class:'doc'});copy(doc.body,d);
+  for(const t of [...d.querySelectorAll('table')]){const w=el('div',{class:'tw'});t.replaceWith(w);w.append(t)}
+  return d}
+function ntable(heads,rows){return el('div',{class:'tw'},el('table',{class:'nt'},el('thead',{},el('tr',{},...heads.map(h=>el('th',{},h)))),el('tbody',{},...rows)))}
+function td(label,...kids){return el('td',{'data-l':label},...kids)}
+
+// 氏名一覧
+let NAMEQ='',NAMEK=''; // NAMEK：区分で絞り込む（''はすべて。改善24）
+function pNames(v,jump){
+  if(!NKEEP)NAMEK=''; // ほかの画面から開いたときは「すべて」から（消す・直すのあとだけ絞り込みを残す。改善24）
+  v.append(crumb('氏名一覧'),el('h2',{},'氏名一覧'),el('p',{class:'lead'},'置き換えに使う名前の一覧です（対応表＼氏名一覧.xlsx）。ここで直した内容が、次の「置き換える」からそのまま使われます。この画面はこのパソコンの中だけで動いています。'),flashBox());
+  fetchInto(v,'/api/names/list',{},r=>{
+    if(r.excelOpen)v.append(el('div',{class:'warnbox'},'⚠ 氏名一覧.xlsx がExcelで開かれています。この画面から直すときは、先にExcelを閉じてください。'));
+    const dupN=r.rows.filter(x=>x.dup).length;
+    if(dupN)v.append(dupBox(r.groups||[]));
+    const kinds=['利用者','家族','その他','除外','住所'];
+    // 呼び名に入っている住所（改善6）：一覧で示し、ボタンで住所の登録へ移す
+    const aRows=r.rows.filter(x=>x.addrAlias&&x.addrAlias.length);
+    if(aRows.length)v.append(el('div',{class:'card',id:'addrmove'},el('h3',{},'呼び名に住所が入っている方（'+aRows.length+'人）'),
+      el('p',{class:'note'},'住所は、人の呼び名ではなく「住所」として登録する形に変わりました（同じ地域の別の方と取り違えないため）。「住所の登録へ移す」を押すと、その方の呼び名から住所を外し、区分「住所」の行に足します。押したときだけ変わります。記号対応表は消さないので、前に渡した書類も元に戻せます。建物名・部屋番号だけの呼び名は、そのまま残します。'),
+      ntable(['区分','氏名','呼び名に入っている住所',''],aRows.map(x=>el('tr',{},td('区分',x.kind),td('氏名',x.name),td('住所',x.addrAlias.join('／')),el('td',{class:'ops'},el('button',{class:'btn primary small movebtn',onclick:()=>act(async()=>{const y=await post('/api/names/moveaddr',{old:x});msg('ok',y.ok)},'移しています…')},'住所の登録へ移す')))))));
+    const kSel=(val)=>el('select',{},...[...new Set([...kinds,val].filter(Boolean))].map(k=>el('option',{selected:k===val},k)));
+    // 追加
+    const ak=kSel('利用者'),an=el('input',{placeholder:'例：大和 一郎（姓と名の間にスペース）',style:'width:100%'}),aa=el('input',{placeholder:'（任意）ふりがな・呼び名など。／で区切る（住所は区分「住所」で）',style:'width:100%'});
+    const addBox=el('details',{class:'card',id:'addbox'},el('summary',{style:'cursor:pointer;font-weight:700;color:var(--main)'},'＋ 新しく追加する'),
+      el('div',{class:'form',style:'margin-top:10px'},el('span',{},'区分'),ak,el('span',{},'氏名'),an,el('span',{},'呼び名'),aa),
+      el('div',{class:'bar'},el('span',{class:'note'},'よその事業所の職員は「その他」、自分の事業所の職員や名前ではない語は「除外」。'),el('button',{class:'btn primary small',id:'addbtn',onclick:()=>act(async()=>{const x=await post('/api/names/add',{kind:ak.value,name:an.value,alias:aa.value});msg('ok',x.ok)},'追加しています…')},'追加する')));
+    // 直す
+    const edit=el('div');
+    // 直す欄は、押した行のすぐ下に開く（画面が上へ飛ばない。改善22）
+    const openEdit=(row,tr)=>{const k=kSel(row.kind),n=el('input',{style:'width:100%'}),a=el('input',{style:'width:100%'});n.value=row.name;a.value=row.alias;
+      for(const o of document.querySelectorAll('tr.editrow'))o.remove();
+      for(const o of document.querySelectorAll('tr.editing'))o.classList.remove('editing');
+      if(tr)tr.classList.add('editing'); // 直している行に色を付けたまま（改善24）
+      let er=null;const close=()=>{if(er)er.remove();if(tr)tr.classList.remove('editing')};
+      const box=el('div',{class:'card editbox',id:'editbox'},el('h3',{},'直す：'+row.row+'行目「'+row.name+'」'),
+        el('div',{class:'form'},el('span',{},'区分'),k,el('span',{},'氏名'),n,el('span',{},'呼び名'),a),
+        el('p',{class:'note'},'呼び名は「／」で区切ります。呼び名は消さずに後ろへ書き足すのがおすすめです。氏名や区分を直すと、次からは新しい記号になります（前の記号は記号対応表に残るので、前に渡した書類も元に戻せます）。'),
+        el('div',{class:'bar'},el('button',{class:'btn light small',onclick:close},'やめる'),el('button',{class:'btn primary small',id:'savebtn',onclick:()=>{keepAt(tr,{row:row.row,name:null},0);act(async()=>{const x=await post('/api/names/edit',{old:row,kind:k.value,name:n.value,alias:a.value});msg('ok',x.ok)},'直しています…')}},'この内容で直す')));
+      if(tr){er=el('tr',{class:'editrow'},el('td',{colspan:'5'},box));tr.after(er)}else edit.replaceChildren(box)};
+    // 消したあとも、同じ所を見たまま（すぐ下の行が同じ高さに来るように。改善22）
+    const keepNext=(row,tr)=>{let nx=tr&&tr.nextElementSibling;while(nx&&!nx.dataset.row)nx=nx.nextElementSibling;nx=nx||(tr&&tr.previousElementSibling);const nr=nx&&nx.dataset.row?r.rows.find(y=>String(y.row)===nx.dataset.row):null;
+      if(nr)keepAt(nx,nr,nr.row>row.row?-1:0);else NKEEP={y:window.scrollY}};
+    const nk=x=>x.kind+'|'+x.name.replace(/[ 　]/g,'');
+    const alist=a=>(a||'').split(/[\/／、,，]/).map(x=>x.trim()).filter(Boolean);
+    const del=(row,tr)=>{
+      // 重複行を1行消すとき、その行にしかない呼び名があれば、残す行へ移すかを聞く（改善25）
+      const sibs=row.dup?r.rows.filter(y=>y.row!==row.row&&nk(y)===nk(row)):[];
+      const target=sibs.find(y=>(row.kind==='利用者'||row.kind==='家族')&&/[ 　]/.test(y.name))||sibs[0];
+      // ほかの重複行のどこにもない呼び名だけを「この行にしかない」とする（移す先にない呼び名は移す）
+      const norm=a=>a.replace(/[ 　]/g,'');const inSibs=new Set(sibs.flatMap(y=>alist(y.alias).map(norm)));
+      const uniq=target?alist(row.alias).filter(a=>!inSibs.has(norm(a))):[];
+      if(target&&uniq.length&&tr){
+        // 開いている「直す」「消す」の欄と色は、先に全部閉じる（取り違えない。改善25 点検役）
+        for(const o of document.querySelectorAll('tr.editrow'))o.remove();
+        for(const o of document.querySelectorAll('tr.editing'))o.classList.remove('editing');
+        let dr=null;const close=()=>{if(dr)dr.remove();tr.classList.remove('editing')};
+        tr.classList.add('editing');
+        const spaced=(row.kind==='利用者'||row.kind==='家族')&&/[ 　]/.test(row.name)&&!/[ 　]/.test(target.name);
+        const go=mv=>{keepNext(row,tr);act(async()=>{const x=await post('/api/names/delete',mv?{old:row,target}:{old:row});msg('ok',x.ok)},'消しています…')};
+        const box=el('div',{class:'card editbox',id:'delbox'},el('h3',{},'消す：'+row.row+'行目「'+row.name+'」（重複の行）'),
+          el('p',{},'この行にしかない呼び名「',el('b',{},uniq.join('／')),'」も一緒に消えます。消えると、この書き方は次から記号になりません。'),
+          el('p',{class:'note'},'同じ方の '+target.row+'行目（呼び名：'+(target.alias||'なし')+'）に移してから消すのがおすすめです。重複がたくさんあるときは、上の「重複をまとめる」で一度に片づけられます（呼び名は残ります）。'),
+          spaced?el('p',{class:'note'},'※消そうとしている行は姓と名の間にスペースがあり、残る '+target.row+'行目はスペースがありません。スペースのある書き方を残したいときは「やめる」を押して、上の「重複をまとめる」を使ってください。'):null,
+          el('div',{class:'bar'},el('button',{class:'btn light small',onclick:close},'やめる'),el('button',{class:'btn light small',id:'delnomove',onclick:()=>{if(confirm('呼び名「'+uniq.join('／')+'」も消えます。本当に消しますか？'))go(false)}},'呼び名ごと消す'),
+            el('button',{class:'btn primary small',id:'delmove',onclick:()=>go(true)},'呼び名を '+target.row+'行目に移してから消す')));
+        dr=el('tr',{class:'delrow editrow'},el('td',{colspan:'5'},box));tr.after(dr);return}
+      const kept=sibs.length&&row.alias&&!uniq.length; // 呼び名はほかの重複行にもある
+      if(!confirm('氏名一覧から「'+row.name+'」（'+row.kind+'）の行を消しますか？'+(row.alias?(kept?'\n呼び名「'+row.alias+'」は、同じ方のほかの行にもあるので残ります。':'\n呼び名「'+row.alias+'」も消えます。'):'')+'\n\n記号対応表'+(row.code?'（'+row.code+'）':'')+'は消しません。同じ区分・同じ氏名でもう一度登録すると、同じ記号に戻ります。'))return;
+      keepNext(row,tr);
+      act(async()=>{const x=await post('/api/names/delete',{old:row});msg('ok',x.ok)},'消しています…')};
+    const q=el('input',{class:'search',type:'search',placeholder:'さがす（氏名・呼び名・記号）',oninput:e=>{NAMEQ=e.target.value;fill()}});q.value=NAMEQ;
+    const tb=el('tbody');const cntEl=el('div',{class:'note'});
+    // 区分で絞り込むボタン（改善24）：さがす欄と一緒に使える。選んだ区分は消す・直すのあとも残る
+    const kOf=x=>x.kind||'（空欄）';
+    const kList=['利用者','家族','その他','除外','住所'];for(const x of r.rows)if(!kList.includes(kOf(x)))kList.push(kOf(x));
+    if(NAMEK&&!kList.includes(NAMEK))NAMEK='';
+    const chips=el('div',{class:'kindchips',id:'kindchips'});
+    const drawChips=()=>chips.replaceChildren(...['',...kList].map(k=>el('button',{type:'button',class:k===NAMEK?'on':'','data-k':k,'aria-pressed':String(k===NAMEK),onclick:()=>{NAMEK=k;drawChips();fill()}},(k||'すべて')+' '+(k?r.rows.filter(x=>kOf(x)===k).length:r.rows.length))));
+    function fill(){const w=NAMEQ.trim().replace(/[ 　]/g,'');const rows=r.rows.filter(x=>(!NAMEK||kOf(x)===NAMEK)&&(!w||(x.kind+x.name+x.alias+x.code).replace(/[ 　]/g,'').includes(w)));
+      cntEl.textContent='登録 '+r.rows.length+'件'+(w||NAMEK?'　／　表示 '+rows.length+'件':'');
+      tb.replaceChildren(...(rows.length?rows.map(x=>el('tr',{class:x.dup?'duprow':'','data-row':x.row},td('区分',x.kind||'（空欄）'),td('氏名',x.name,x.dup?el('span',{class:'dupmark'},'重複（同じ区分・同じ氏名が'+x.dup+'行）'):null),td('呼び名',x.alias||'—'),el('td',{class:'code','data-l':'記号'},x.code||'—'),
+        el('td',{class:'ops'},el('button',{class:'btn light small',onclick:e=>openEdit(x,e.target.closest('tr'))},'直す'),' ',el('button',{class:'x',onclick:e=>del(x,e.target.closest('tr'))},'消す')))):[el('tr',{},el('td',{colspan:'5',class:'hit-none'},!r.rows.length?'まだ誰も登録されていません':NAMEK?['「'+NAMEK+'」の中には見つかりませんでした　',el('button',{class:'btn light small',id:'kindall',onclick:()=>{NAMEK='';drawChips();fill()}},'すべてで探す')]:'見つかりませんでした'))]))}
+    drawChips();
+    // 「氏名一覧のその行を開く」（改善12 No.37）：その行が見える位置に移って色で示す
+    let jumpMsg=null;
+    if(jump){if(!r.rows.some(x=>String(x.row)===String(jump)))jumpMsg=el('div',{class:'msg info'},jump+'行目は見つかりませんでした（消したか、行がずれました）。');
+      else{const hit=r.rows.find(x=>String(x.row)===String(jump));const w=NAMEQ.trim().replace(/[ 　]/g,'');if(w&&!(hit.kind+hit.name+hit.alias+hit.code).replace(/[ 　]/g,'').includes(w)){NAMEQ='';q.value=''}
+        if(NAMEK&&kOf(hit)!==NAMEK){NAMEK='';drawChips()}
+        jumpMsg=el('div',{class:'msg info',id:'jumpmsg'},jump+'行目（'+hit.kind+'「'+hit.name+'」）を色で示しています。この行の「直す」「消す」を押せます。')}}
+    fill();
+    v.append(jumpMsg,el('div',{class:'namebar'},chips,q,cntEl),edit,el('div',{class:'tw'},el('table',{class:'nt',id:'nametable'},el('thead',{},el('tr',{},...['区分','氏名','呼び名','記号',''].map(h=>el('th',{},h)))),tb)),addBox,
+      el('div',{class:'secondary'},el('div',{class:'note'},'ふだんは使いません。表の見た目などをExcelで直したいときだけ使います（直したら保存して、Excelを閉じてください）。'),el('button',{class:'btn light small',onclick:()=>openIt('namelist')},'Excelで開く')),backBar());
+    if(jump){const tr=tb.querySelector('tr[data-row="'+jump+'"]');if(tr){tr.classList.add('focus');tr.scrollIntoView({block:'center'})}}
+    else keepRestore(tb);
+  });
+}
+// 1行の「消す」「直す」のあと、画面をいちばん上に戻さない（改善22）
+let NKEEP=null;
+function keepAt(tr,row,shift){NKEEP={kind:row.kind,name:row.name,row:row.row+(shift||0),top:tr?tr.getBoundingClientRect().top:null,y:window.scrollY}}
+function keepRestore(tb){const k=NKEEP;NKEEP=null;if(!k)return;
+  let best=k.name==null?tb.querySelector('tr[data-row="'+k.row+'"]'):null,bd=1e9;if(k.name!=null)for(const t of tb.querySelectorAll('tr[data-row]')){const x=+t.dataset.row;const c=t.children[1];if(!c||!c.textContent.startsWith(k.name))continue;const d=Math.abs(x-k.row);if(d<bd){bd=d;best=t}}
+  if(best&&k.top!=null)window.scrollTo(0,window.scrollY+best.getBoundingClientRect().top-k.top);else window.scrollTo(0,k.y||0);
+  // 上に止めた帯（区分のボタン・さがす欄）の下に行が隠れないように（改善24 点検役）
+  const bar=document.querySelector('.namebar');if(best&&bar){const hb=bar.getBoundingClientRect().bottom,tp=best.getBoundingClientRect().top;if(tp<hb+4)window.scrollBy(0,tp-hb-8)}
+  if(best){best.classList.add('focus');setTimeout(()=>best.classList.remove('focus'),2500)}
+  const f=document.querySelector('#view .msg');if(f&&f.getBoundingClientRect().bottom<0){const t=el('div',{class:'msg toast '+([...f.classList].find(c=>c==='ok'||c==='ng'||c==='info')||'ok')},f.textContent);document.body.append(t);setTimeout(()=>t.remove(),6000)}}
+// 重複をまとめる（改善22）：何人分でも1回で。チェックした人だけ。押す前に控えを取る
+function dupBox(groups){
+  const extra=groups.reduce((a,g)=>a+g.rows.length-1,0);
+  const btn=el('button',{class:'btn primary',id:'mergebtn'});
+  const cbs=groups.map(g=>el('input',{type:'checkbox',checked:true,onchange:()=>upd()}));
+  function upd(){const on=groups.filter((g,i)=>cbs[i].checked);const n=on.reduce((a,g)=>a+g.rows.length-1,0);btn.textContent='チェックした '+on.length+' 人の重複をまとめる（'+n+' 行を減らす）';btn.disabled=!on.length}
+  const all=v=>{for(const c of cbs)c.checked=v;upd()};
+  btn.onclick=()=>{const on=groups.filter((g,i)=>cbs[i].checked);if(!on.length)return;const n=on.reduce((a,g)=>a+g.rows.length-1,0);
+    if(!confirm(on.length+' 人分の重複をまとめて、'+n+' 行を減らします。\n\n・呼び名は、残す行に集めます（消しません）\n・まとめる前の氏名一覧は「控え」に残します\n・記号対応表は消しません\n\nよろしいですか？'))return;
+    act(async()=>{const x=await post('/api/names/merge',{groups:on});msg('ok',x.ok)},'まとめています…')};
+  const rows=groups.map((g,i)=>el('label',{class:'dg'},cbs[i],' ',el('span',{class:'dgn'},g.name),'（'+g.kind+'）　'+g.rows.length+' 行 → 1 行',
+    el('div',{class:'note',style:'margin:2px 0 0 24px'},'残す行：'+g.keep+'行目'+(g.alias?'　／　まとめたあとの呼び名：'+g.alias:'')+(g.codes&&g.codes.length>1?'　／　※書き方の違いで記号が '+g.codes.join('・')+' に分かれています。次からは残す行の記号を使います（前の記号も記号対応表に残るので、前に渡した書類も元に戻せます）':''))));
+  upd();
+  return el('div',{class:'card',id:'dupbox'},el('h3',{},'同じ方が2行以上ある方：'+groups.length+' 人（減らせる行：'+extra+' 行）'),
+    el('p',{class:'note',style:'margin:4px 0'},'下のボタン1回で、チェックした方を全員まとめます（1人ずつ「消す」を押さなくてよい）。呼び名は残す行に集めるので、置き換えの働きは変わりません。'),
+    el('div',{class:'bar',style:'justify-content:flex-start'},el('button',{class:'btn light small',onclick:()=>all(true)},'全部チェック'),el('button',{class:'btn light small',onclick:()=>all(false)},'全部外す')),
+    el('div',{class:'duprows'},...rows),el('div',{class:'bar'},btn))}
+// 00_指示
+function stChip(st){const t=st||'（不明）';return el('span',{class:'chip '+(/未着手|差し戻し|要相談/.test(t)?'n':/完了|合格|済/.test(t)?'g':'')},t)}
+function pShiji(v){
+  v.append(crumb('00_指示'),el('h2',{},'00_指示'),el('p',{class:'lead'},'AIへの依頼の書き置きと、マニュアルなどです。読むだけの画面です（記号は、この画面の中だけ元の名前で表示しています）。'),flashBox());
+  fetchInto(v,'/api/view',{what:'shiji'},r=>{
+    v.append(el('h3',{},'依頼の一覧（'+r.requests.length+'件）'));
+    if(!r.requests.length)v.append(el('div',{class:'empty'},'依頼はありません。'));
+    else v.append(ntable(['利用者','書類','月','状態','依頼日時',''],r.requests.map(x=>el('tr',{},td('利用者',x.user||'—'),td('書類',x.doc||'—'),td('月',x.month||'—'),td('状態',stChip(x.state)),td('依頼日時',x.date||x.mtime),el('td',{class:'ops'},el('button',{class:'btn light small',onclick:()=>goArg('shijidoc',x.file)},'読む'))))));
+    v.append(el('h3',{style:'margin-top:22px'},'マニュアルなど（.md）'));
+    if(!r.docs.length)v.append(el('div',{class:'empty'},'ありません。'));
+    else v.append(ntable(['名前','更新日',''],r.docs.map(x=>el('tr',{},td('名前',x.name),td('更新日',x.mtime),el('td',{class:'ops'},el('button',{class:'btn light small',onclick:()=>goArg('shijidoc',x.name)},'読む'))))));
+    v.append(backBar());
+  });
+}
+function pShijiDoc(v,name){
+  v.append(crumb(name,['00_指示','shiji']),el('h2',{},name));
+  fetchInto(v,'/api/view',{what:'shijiDoc',name},r=>{v.append(mdRender(r.text),backBar(el('a',{class:'btn light',href:'#shiji'},'← 00_指示へ')))});
+}
+// 原本（ケアプラン様式・アセスメント）
+const ORIG={careplan:'ケアプラン様式（原本）',assess:'アセスメント（原本）'};
+function kindLabel(n){n=n.toLowerCase();return /\.(xlsx|xlsm|xls)$/.test(n)?'Excel':/\.(docx|doc)$/.test(n)?'Word':/\.pdf$/.test(n)?'PDF':/\.(md|txt)$/.test(n)?'メモ':'その他'}
+function pOrig(v,box){
+  const title=ORIG[box];
+  v.append(crumb(title),el('h2',{},title),el('div',{class:'orig-warn'},'⚠ ここにあるのは原本（ひな形）です。原本を直接書き換えないでください。使うときは、Excelで開いたらすぐ「名前を付けて保存」で別の場所に保存してから書いてください。'),flashBox());
+  fetchInto(v,'/api/view',{what:'folder',box},r=>{
+    if(r.missing){v.append(el('div',{class:'empty'},'フォルダが見つかりません。'),backBar());return}
+    if(!r.files.length)v.append(el('div',{class:'empty'},'ファイルがありません。'));
+    else v.append(ntable(['名前','種類','更新日',''],r.files.map(x=>{const k=kindLabel(x.name);
+      const op=k==='Excel'||k==='Word'?el('span',{class:'opwrap'},el('button',{class:'btn light small',title:'様式そのものを直すときだけ使います',onclick:()=>openIt(box+'File',x.name)},k+'で開く'),el('span',{class:'opnote'},'様式そのものを直すときだけ')):k==='メモ'?el('button',{class:'btn light small',onclick:()=>goArg('origdoc',box+'/'+x.name)},'読む'):'';
+      return el('tr',{},td('名前',x.name),td('種類',k),td('更新日',x.mtime),el('td',{class:'ops'},op))})));
+    v.append(el('p',{class:'note'},'ふだんはこの一覧を見るだけで大丈夫です。「Excelで開く」「Wordで開く」は、様式そのものを直すときだけ使います。'),backBar());
+  });
+}
+function pOrigDoc(v,arg){const i=arg.indexOf('/');const box=arg.slice(0,i),name=arg.slice(i+1);
+  if(!ORIG[box]){v.append(el('div',{class:'msg ng'},'表示できません'),backBar());return}
+  v.append(crumb(name,[ORIG[box],box]),el('h2',{},name));
+  fetchInto(v,'/api/view',{what:'folderDoc',box,name},r=>{v.append(mdRender(r.text),backBar())});
+}
+// 引き継ぎメモ・使い方
+function pMemo(v){
+  v.append(crumb('引き継ぎメモ'),el('h2',{},'引き継ぎメモ'),el('p',{class:'lead'},'AI作業の 引き継ぎメモ.md です。読むだけの画面です。'));
+  fetchInto(v,'/api/view',{what:'memo'},r=>{v.append(mdRender(r.text),backBar())});
+}
+function pHowto(v){
+  v.append(crumb('使い方'),el('h2',{},'使い方'));
+  fetchInto(v,'/api/view',{what:'howto'},r=>{v.append(safeHTML(r.html),backBar())});
+}
+// マスキング作業フォルダ
+const DIRNOTE={'_前の方の残り':'前の方の残りを脇によけたもの（②で自動。消していません。②の「戻す」で元に戻せます）','1_元データ':'これから置き換える資料（パネルで入れたもの・保留のもの）','1_元データ＼処理済み':'置き換えが済んだ元の資料','2_完成':'元の名前に戻した完成書類','3_確認待ち':'置き換え済みで、まだAIに渡していないもの','対応表':'氏名一覧・記号対応表など（消さないでください）','確認リスト':'処理のたびの確認リスト'};
+function pWork(v){
+  v.append(crumb('マスキング作業フォルダ'),el('h2',{},'マスキング作業フォルダ'),el('p',{class:'lead'},'個人情報を置く、AIの外のフォルダです。フォルダごとに、何が何件あるかを表示します（中身は開きません）。'),flashBox());
+  fetchInto(v,'/api/view',{what:'work'},r=>{
+    v.append(el('div',{class:'note',style:'margin-bottom:10px'},'場所：'+r.work));
+    const box=el('div',{class:'dirs'});
+    for(const d of r.dirs){box.append(el('details',{class:'card','data-dir':d.name,open:d.name==='1_元データ'&&d.count>0},el('summary',{},el('b',{},d.name),'　',el('span',{class:'chip'+(d.count?' g':'')},d.count+'件'),DIRNOTE[d.name]?el('div',{class:'note'},DIRNOTE[d.name]):null),
+      d.files.length?ntable(['名前','更新日'],d.files.map(f=>el('tr',{},td('名前',f.name),td('更新日',f.mtime)))):el('div',{class:'note'},'（ファイルはありません）')))}
+    v.append(box,el('div',{class:'secondary'},el('div',{class:'note'},'ふだんは使いません。ファイルを動かしたり消したりしたいときだけ使います。'),el('button',{class:'btn light small',onclick:()=>openIt('work')},'エクスプローラーで開く')),backBar());
+  });
+}
+// 40・50 のフォルダの中（判定記録・作業メモ・相談メモ）
+function pAi(v,box,folder){
+  const back=box==='40'?['4 届いた合格品','p4']:['5 要相談','p5'];
+  v.append(crumb('中を見る',back),el('h2',{},box==='40'?'判定記録・作業メモ':'相談メモ・ファイル'),el('p',{class:'lead'},'記号は、この画面の中だけ元の名前で表示しています。'));
+  fetchInto(v,'/api/view',{what:'aidir',box,folder},r=>{
+    v.append(el('div',{class:'card'},el('h3',{},r.label),el('div',{class:'note'},'ファイル：'+(r.files.map(f=>f.name).join('、')||'（なし）'))));
+    if(!r.docs.length)v.append(el('div',{class:'empty'},'メモ（.md）はありません。'));
+    for(const d of r.docs)v.append(el('h3',{},d.name),mdRender(d.text));
+    v.append(el('div',{class:'secondary'},el('div',{class:'note'},'ふだんは使いません。ファイルそのものを見たいときだけ使います。'),el('button',{class:'btn light small',onclick:()=>openIt(box==='40'?'passedDir':'consultDir',folder)},'フォルダを開く（エクスプローラー）')),backBar(el('a',{class:'btn light',href:'#'+back[1]},'← '+back[0]+'へ')));
+  });
+}
+// 住所の要確認：利用者・家族の「呼び名」に書き足す
+// ownerPick（改善22）：だれの名前か。候補の方はボタン1回、ほかの方は一覧から。押すと、その方の「呼び名」に s.fix を足す
+// famPicker（改善23）：利用者・家族を選ぶ欄。最初は「（選んでください）」。打って探せる。書類に出てくる方を上に
+function famPicker(exclude,users){
+  const all=(S.family||[]).filter(f=>!(exclude||[]).some(o=>o.row===f.row));
+  const inDoc=f=>(users||[]).includes(f.code);
+  const sorted=[...all.filter(inDoc),...all.filter(f=>!inDoc(f))];
+  const q=el('input',{type:'search',class:'fampick-q',placeholder:'名前を打って探す',style:'width:11em'});
+  const sel=el('select',{class:'fampick'});
+  const fill=()=>{const w=q.value.replace(/[ 　]/g,'');const list=sorted.filter(f=>!w||(f.name+(f.alias||'')).replace(/[ 　]/g,'').includes(w));
+    sel.replaceChildren(el('option',{value:''},list.length?'（利用者・家族を選んでください）':'（見つかりません）'),...list.map(f=>el('option',{value:String(f.row)+'|'+f.name},(inDoc(f)?'★ ':'')+f.kind+'：'+f.name)));sel.dispatchEvent(new Event('change'))};
+  q.oninput=fill;fill();
+  const chosen=()=>{const v=sel.value;if(!v)return null;const i=v.indexOf('|');return sorted.find(f=>String(f.row)===v.slice(0,i)&&f.name===v.slice(i+1))||null};
+  return {q,sel,chosen,empty:!all.length}}
+// ownerPick（改善22・23）：だれの名前か。候補の方はボタン1回、ほかの方は選ぶ欄から。足す書き方は直せる
+function ownerPick(s,box,key,title,light){
+  const fam=()=>S.family||[];
+  const fresh=o=>fam().find(x=>x.row===o.row&&x.name===o.name)||fam().find(x=>x.kind===o.kind&&x.name===o.name)||o;
+  const word=el('input',{class:'fixinp',style:'width:12em'});word.value=s.fix;
+  let busyNow=false;const wrapEl=()=>box.querySelector('.ownerpick');
+  const give=async o=>{const w=word.value.trim();if(!o)return;if(!w){alert('足す書き方が空です。');return}if(busyNow)return;busyNow=true;const bs=[...(wrapEl()||box).querySelectorAll('button')];for(const b of bs)b.disabled=true;
+    try{S=await post('/api/state');const r=await post('/api/names/alias',{old:fresh(o),word:w});S=await post('/api/state');
+    const t='✓ '+r.ok;decMark(b=>b.dataset.key===key,t);if(!box.classList.contains('decided')){box.classList.add('decided');box.replaceChildren(el('div',{class:'added'},t));DECIDED.set(key,t)}await afterDec(r,r.ok)}catch(e){for(const b of bs)b.disabled=false;alert(e.message)}finally{busyNow=false}};
+  const owners=s.owners||[];
+  const btns=owners.map(o=>el('button',{class:'btn small '+(light?'light':'primary')+' ownerbtn',onclick:()=>give(o)},o.name+'（'+o.kind+'）です'));
+  const fp=famPicker(owners,s.fileUsers);
+  const otherBtn=el('button',{class:'btn small light ownerother',disabled:true,onclick:()=>give(fp.chosen())},'この方です');
+  fp.sel.addEventListener('change',()=>{otherBtn.disabled=!fp.chosen()});
+  const pick=fp.empty?null:el('div',{class:'row',style:'margin-top:6px;align-items:center;gap:6px;flex-wrap:wrap'},el('span',{},owners.length?'ほかの方なら：':'選ぶ：'),fp.q,fp.sel,otherBtn);
+  return el('div',{class:'ownerpick',style:'margin:8px 0'},el('div',{style:'font-weight:700'},title),
+    el('div',{class:'row',style:'margin-top:4px;align-items:center;gap:6px;flex-wrap:wrap'},el('span',{class:'note'},'呼び名に足す書き方：'),word),
+    el('div',{class:'note'},'押すと、その方の呼び名に足します（次から自動で記号に）。'),
+    btns.length?el('div',{class:'row',style:'margin-top:6px;gap:6px;flex-wrap:wrap'},...btns):el('div',{class:'note'},'字の合う方が氏名一覧に見つかりませんでした。下の欄で選んでください。'),pick)}
+function aliasAdder(word,box,label){
+  const fam=S.family||[];
+  if(!fam.length)return el('div',{class:'note',style:'margin-top:6px'},'利用者・家族の住所なら、先に氏名一覧に利用者・家族を登録してください。');
+  const fp=famPicker([],box&&box.fileUsers);
+  const btn=el('button',{class:'btn small primary',disabled:true},'この方の「呼び名」に書き足す');
+  fp.sel.addEventListener('change',()=>{btn.disabled=!fp.chosen()});
+  btn.onclick=async()=>{const f0=fp.chosen();if(!f0)return;const f=(S.family||[]).find(x=>x.row===f0.row&&x.name===f0.name)||f0;try{const r=await post('/api/names/alias',{old:f,word});box.replaceChildren(el('div',{class:'added'},'✓ '+r.ok));S=await post('/api/state');
+    if(box.dataset&&box.dataset.key)decMark(b=>b.dataset.key===box.dataset.key,'✓ '+r.ok);if(box.classList&&box.classList.contains('ask')){box.classList.add('decided');if(box.dataset.key)DECIDED.set(box.dataset.key,'✓ '+r.ok)}await afterDec(r,r.ok)}catch(e){alert(e.message)}};
+  return el('div',{class:'row',style:'margin-top:8px;align-items:center;gap:6px;flex-wrap:wrap'},el('span',{},label||'利用者・家族の住所 →'),fp.q,fp.sel,btn);
+}
+
+// ---------- 支援経過（改善4） ----------
+function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+// 日付の欄（改善5）：キーボードで書ける欄（2026-09-27・R8.9.27・2026/9/27・9/27 など）と、ボタンのすぐ下に出る小さなカレンダー
+const isoOf=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+function parseDateText(t){t=(t||'').trim().replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[Ｒｒr]/,'R').replace(/[．。、／\-－年月]/g,x=>x==='年'||x==='月'?'.':'.').replace(/日.*$/,'').replace(/[（(].*$/,'').replace(/\//g,'.').replace(/\s/g,'');
+  let m,y,mo,d;
+  if(m=t.match(/^(?:R|令和)(\d{1,2})\.(\d{1,2})\.(\d{1,2})$/)){y=+m[1]+2018;mo=+m[2];d=+m[3]}
+  else if(m=t.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/)){y=+m[1];mo=+m[2];d=+m[3]}
+  else if(m=t.match(/^(\d{1,2})\.(\d{1,2})$/)){y=new Date().getFullYear();mo=+m[1];d=+m[2]}
+  else return '';
+  const x=new Date(y,mo-1,d);if(x.getFullYear()!==y||x.getMonth()!==mo-1||x.getDate()!==d)return '';return isoOf(x)}
+const WDJ='日月火水木金土';
+function warekiLabel(iso){if(!iso)return '';const [y,m,d]=iso.split('-').map(Number);const x=new Date(y,m-1,d);return 'R'+(y-2018)+'.'+m+'.'+d+'（'+WDJ[x.getDay()]+'）'}
+function dateBox(o){
+  let cur=o.value||'';
+  const inp=el('input',{id:o.id,class:'dtext',type:'text',inputmode:'numeric',autocomplete:'off',placeholder:o.ph||'R8.9.27',title:'2026-09-27・R8.9.27・9/27 の形で書けます','aria-label':'日付'});inp.value=cur;
+  const lab=el('span',{class:'dlabel'},warekiLabel(cur));
+  const pop=el('div',{class:'calpop',role:'dialog','aria-label':'カレンダー',hidden:true});
+  const btn=el('button',{class:'btn light small calbtn',type:'button',id:o.id+'-cal','aria-haspopup':'dialog','aria-expanded':'false',title:'カレンダーから選ぶ'},'📅');
+  const wrap=el('span',{class:'datebox'},inp,btn,lab,pop);
+  let view=null;
+  const over=iso=>o.max&&iso>o.max;
+  function set(iso,fromTyping){cur=iso;if(!fromTyping)inp.value=iso;lab.textContent=iso?warekiLabel(iso):(inp.value.trim()?'日付の形が読めません':'');lab.style.color=iso||!inp.value.trim()?'':'var(--ng)';if(o.onch)o.onch(iso)}
+  function close(){pop.hidden=true;btn.setAttribute('aria-expanded','false');document.removeEventListener('mousedown',outside,true)}
+  function outside(e){if(!wrap.contains(e.target))close()}
+  function draw(){const y=view.getFullYear(),m=view.getMonth();const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),today=todayISO();
+    const prev=el('button',{type:'button','aria-label':'前の月',onclick:()=>{view=new Date(y,m-1,1);draw()}},'‹');
+    const next=el('button',{type:'button','aria-label':'次の月',onclick:()=>{view=new Date(y,m+1,1);draw()}},'›');
+    const g=el('div',{class:'calgrid'},...[...WDJ].map((w,i)=>el('span',{class:'wd'+(i===0?' sun':i===6?' sat':'')},w)));
+    for(let i=0;i<first;i++)g.append(el('span'));
+    for(let d=1;d<=days;d++){const iso=isoOf(new Date(y,m,d)),wd=(first+d-1)%7;
+      g.append(el('button',{type:'button','data-iso':iso,class:(wd===0?'sun ':wd===6?'sat ':'')+(iso===today?'today ':'')+(iso===cur?'sel':''),disabled:over(iso),onclick:()=>{set(iso);close();btn.focus()}},String(d)))}
+    pop.replaceChildren(el('div',{class:'calhead'},prev,el('span',{},'R'+(y-2018)+'年（'+y+'年）'+(m+1)+'月'),next),g,
+      el('div',{class:'calfoot'},el('button',{type:'button',class:'btn light small',onclick:()=>{set(o.max&&todayISO()>o.max?o.max:todayISO());close();btn.focus()}},'今日'),el('button',{type:'button',class:'btn light small',onclick:()=>{close();btn.focus()}},'閉じる')))}
+  function open(){const base=cur||todayISO();const [y,m]=base.split('-').map(Number);view=new Date(y,m-1,1);draw();
+    pop.style.left=btn.offsetLeft+'px';pop.hidden=false;btn.setAttribute('aria-expanded','true');
+    // 画面の右にはみ出すときは左へずらす（390px の画面でも横にはみ出さない）
+    const r=pop.getBoundingClientRect(),vw=document.documentElement.clientWidth;if(r.right>vw-8){pop.style.left=Math.max(btn.offsetLeft-(r.right-(vw-8)),-wrap.getBoundingClientRect().left+8)+'px'}
+    document.addEventListener('mousedown',outside,true);
+    const f=pop.querySelector('button.sel')||pop.querySelector('button.today')||pop.querySelector('.calgrid button:not(:disabled)');if(f)f.focus()}
+  btn.addEventListener('click',()=>{pop.hidden?open():close()});
+  pop.addEventListener('keydown',e=>{if(e.key==='Escape'){close();btn.focus();return}
+    const b=e.target.closest&&e.target.closest('.calgrid button');if(!b)return;const k={ArrowLeft:-1,ArrowRight:1,ArrowUp:-7,ArrowDown:7}[e.key];if(!k)return;e.preventDefault();
+    const [y,m,d]=b.dataset.iso.split('-').map(Number);const n=new Date(y,m-1,d+k),iso=isoOf(n);if(n.getMonth()!==view.getMonth()){view=new Date(n.getFullYear(),n.getMonth(),1);draw()}const nb=pop.querySelector('[data-iso="'+iso+'"]');if(nb)nb.focus()});
+  inp.addEventListener('input',()=>{const iso=parseDateText(inp.value);set(iso&&!over(iso)?iso:'',true)});
+  inp.addEventListener('change',()=>{const iso=parseDateText(inp.value);if(iso&&!over(iso)){set(iso)}else if(inp.value.trim()){lab.textContent=iso?'先の日付は選べません':'日付の形が読めません';lab.style.color='var(--ng)'}});
+  inp.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&e.altKey){e.preventDefault();open()}});
+  return {wrap,input:inp,value:()=>cur}
+}
+function userSel(val,onch,id){return el('select',{id,onchange:e=>onch(e.target.value)},el('option',{value:''},'（選んでください）'),...(S.users||[]).map(u=>el('option',{value:u.id,selected:u.id===val},u.label)))}
+const KT={user:'',date:'',text:''};
+// 今日の支援経過：文字起こしを貼る → Word にして 1_元データ へ（AIに渡す書類は「支援経過（1日分）」）
+function keikaTodayBox(){
+  const us=userSel(KT.user,x=>KT.user=x,'kt-user');
+  const dt=dateBox({id:'kt-date',value:KT.date||todayISO(),max:todayISO(),onch:v=>KT.date=v});
+  const cnt=el('span',{class:'note'},[...KT.text].length.toLocaleString()+' 字');
+  const ta=el('textarea',{id:'kt-text',placeholder:'その日の録音の文字起こしを貼り付けてください（Ctrl＋V）',oninput:e=>{KT.text=e.target.value;cnt.textContent=[...e.target.value].length.toLocaleString()+' 字'}});ta.value=KT.text;
+  const put=async()=>{if(!us.value){alert('利用者を選んでください');return}if(!ta.value.trim()){alert('貼り付け欄が空です。');return}if([...ta.value].length>200000){alert('20万字を超えています。');return}
+    await act(async()=>{const r=await post('/api/keika/today',{user:us.value,date:dt.value(),text:ta.value});KT.text='';KT.date='';F.user=r.user;F.doc='支援経過（1日分）';F.date=r.date;msg('ok',r.ok)},'Wordにしています…')};
+  return el('div',{class:'paste keika',id:'keikaToday'},el('h3',{},'今日の支援経過'),
+    el('p',{class:'note',style:'margin-top:0'},'利用者と日付を選び、その日の録音の文字起こしを貼り付けます。このパソコンの中でWordにして 1_元データ に入れます（インターネットには送りません）。そのあと「2 置き換える」→「3 AIに渡す」へ。AIに渡すときの書類は「支援経過（1日分）」が選ばれた状態になります。AIからは1日分のExcelが届き、「6 完成した書類」から、サーバーの利用者フォルダの支援経過（.xlsm）に書き足せます。'),
+    el('div',{class:'form'},el('span',{},'利用者'),us,el('span',{},'日付'),dt.wrap),
+    el('div',{class:'titlerow',style:'margin-top:10px'},voiceBtn(ta,'-kt'),el('span',{class:'hint',id:'voicehint-kt',style:'margin:0'},'Windowsキー＋H でも声で入力できます')),
+    el('div',{style:'margin-top:8px'},ta),
+    el('div',{class:'bar'},cnt,el('button',{class:'btn primary',id:'kt-put',onclick:put},'支援経過（1日分）として入れる')));
+}
+const KX={user:'',period:'3',from:'',to:''};
+// 支援経過一覧から切り出す：期間内の件を新しい順に抜き出した Word を 1_元データ へ
+function keikaExtractBox(){
+  const us=userSel(KX.user,x=>KX.user=x,'kx-user');
+  const f=dateBox({id:'kx-from',value:KX.from,max:todayISO(),onch:v=>KX.from=v});
+  const t=dateBox({id:'kx-to',value:KX.to||todayISO(),max:todayISO(),onch:v=>KX.to=v});
+  const cust=el('div',{class:'titlerow',style:KX.period==='custom'?'':'display:none'},f.wrap,el('span',{},'〜'),t.wrap);
+  const per=el('select',{id:'kx-period',onchange:e=>{KX.period=e.target.value;cust.style.display=KX.period==='custom'?'':'none'}},...[['1','今日までの1か月'],['3','今日までの3か月'],['6','今日までの6か月'],['custom','日付を指定する']].map(([v,x])=>el('option',{value:v,selected:v===KX.period},x)));
+  const run=async()=>{if(!us.value){alert('利用者を選んでください');return}
+    await act(async()=>{const r=await post('/api/keika/extract',{user:us.value,period:per.value,from:f.value(),to:t.value()});
+      let x=r.ok+'\n（一覧の件 全'+r.total+'件のうち、期間内 '+r.count+'件）';
+      if(r.bad.length)x+='\n\n⚠ 頭の日付（R8.9.27（日）の形）を読めない段落が '+r.bad.length+' 件あり、切り出しに入れていません。「支援経過のファイル」で写し直すか、手で頭を直してください：\n'+r.bad.map(b=>'・'+b).join('\n');
+      msg(r.bad.length||!r.count?'ng':'ok',x)},'切り出しています…')};
+  return el('details',{class:'reg',id:'keikaExtract',open:!!KX.user},el('summary',{},'支援経過一覧から切り出す（モニタリングなどでAIに渡すとき）'),
+    el('p',{class:'note'},'その方の 支援経過一覧.docx から、期間内の件を新しい順に抜き出したWord（題「支援経過（R8.6.27〜R8.9.27）」）を作って 1_元データ に入れます。一覧そのものは書き換えません。'),
+    el('div',{class:'form'},el('span',{},'利用者'),us,el('span',{},'期間'),per,el('span',{}),cust),
+    el('div',{class:'bar'},el('button',{class:'btn primary small',id:'kx-run',onclick:run},'切り出して 1_元データ に入れる')));
+}
+// ⑥ → 書き足す前の確認画面
+function pKeikaAdd(v,arg){
+  const i=arg.indexOf('/');const folder=arg.slice(0,i),name=arg.slice(i+1);
+  v.append(crumb('支援経過記録・一覧に書き足す',['6 完成した書類','p6']),el('h2',{},'支援経過記録・一覧に書き足す'),flashBox());
+  fetchInto(v,'/api/keika/preview',{folder,name},pl=>{
+    const more=pl.bodyLines-pl.bodyFirst.length;
+    v.append(el('div',{class:'card',id:'keikaPlan'},el('h3',{},pl.userLabel),
+      el('div',{class:'form'},el('span',{},'元の書類'),el('span',{style:'overflow-wrap:anywhere'},'2_完成＼'+pl.source),
+        el('span',{},'書き足す先'),el('div',{class:'kfiles'},...(pl.files.length?pl.files.map(f=>el('div',{},'マスキング作業＼'+f)):[el('div',{},'（なし）')])))));
+    const what=el('div',{class:'card'},el('h3',{},'書き足す内容'));
+    if(!pl.recordDone)what.append(el('p',{style:'margin:4px 0'},el('b',{},'① 支援経過記録（Excel）'),'：新しいシート「'+pl.sheets.join('」「')+'」を最後に足します（原紙① を複製し、記入日・利用者名・記入者・本文を入れます）。'));
+    if(!pl.listDone)what.append(el('p',{style:'margin:4px 0'},el('b',{},'② 支援経過一覧（Word）'),'：一番上（ヘッダーの下）に1件足します。'));
+    what.append(el('div',{class:'note',style:'margin-top:8px'},'足す1件の頭と、本文の最初の'+pl.bodyFirst.length+'行：'),
+      el('div',{class:'kprev',id:'keikaPrev'},[pl.head,...pl.bodyFirst].join('\n')+(more>0?'\n…（ほか '+more+' 行）':'')));
+    v.append(what);
+    for(const w of pl.warnings)v.append(el('div',{class:'warnbox'},'⚠ '+w));
+    if(pl.blocked){v.append(el('div',{class:'msg ng',id:'keikaBlocked'},pl.blocked),backBar(el('a',{class:'btn light',href:'#p6'},'← 6 完成した書類へ')));return}
+    v.append(el('div',{class:'okbox'},((!pl.recordDone&&!pl.recordNew)||(!pl.listDone&&!pl.listNew)?'書き足す前に、今のファイルの控えを、同じフォルダの「控え」に取ります。':'新しく作るファイルなので、控えはありません。')+'何も消しません。まだ何も書いていません。'));
+    const run=async()=>{await act(async()=>{const r=await post('/api/keika/append',{id:pl.id});let t=r.ok;if(r.backups&&r.backups.length)t+='\n控え：'+r.backups.map(b=>r.folder+'＼'+b).join('、');msg('ok',t);go('p6')},'書き足しています…')};
+    v.append(el('div',{class:'bar cleanbar'},el('button',{class:'btn light',id:'keikaCancel',onclick:()=>{msg('info','やめました。何も書いていません。');go('p6')}},'やめる'),
+      el('button',{class:'btn primary',id:'keikaRun',onclick:run},'書き足す')));
+  });
+}
+// ⑥ → サーバーの利用者フォルダの .xlsm に書き足す前の確認画面（改善18）
+function pKeikaXAdd(v,arg){
+  const i=arg.indexOf('/');const folder=arg.slice(0,i),name=arg.slice(i+1);
+  v.append(crumb('支援経過（Excel）に書き足す',['6 完成した書類','p6']),el('h2',{},'支援経過（Excel）に書き足す'),flashBox());
+  fetchInto(v,'/api/keika/xpreview',{folder,name},pl=>{
+    const more=pl.bodyLines-pl.bodyFirst.length,hasHint=!!(pl.dayFile||pl.bookFile||pl.canCreate);
+    v.append(el('div',{class:'card',id:'keikaXPlan'},el('h3',{},pl.userLabel),
+      el('div',{class:'form'},el('span',{},'元の書類'),el('span',{style:'overflow-wrap:anywhere'},'2_完成＼'+pl.source),
+        (pl.blocked&&hasHint)?null:el('span',{},'書き足す先'),(pl.blocked&&hasHint)?null:el('div',{class:'kfiles'},el('div',{},pl.xlsm?('サーバー＼'+pl.dir+'＼'+pl.xlsm):'（見つかりません）')))));
+    if(pl.blocked){
+      if(hasHint)v.append(el('div',{class:'okbox',id:'keikaXDayHint',style:'font-weight:400'},el('div',{},pl.bookFile?'この方は、サーバーの「'+pl.bookFile+'」に足す形です。「サーバーへ保存」から足せます（シートを足し、「一覧」にも1行足します）。':pl.canCreate?'この方のフォルダには、支援経過のExcelがまだありません。「サーバーへ保存」で、「支援経過_氏名.xlsx」を新しく作れます。':'この方は、1日分のExcel（'+pl.dayFile+'）に足す形です。「サーバーへ保存」から足せます。'),el('div',{style:'margin-top:8px'},el('button',{class:'btn primary small',id:'keikaXToSrv',onclick:()=>goArg('srv',folder)},'サーバーへ保存の画面へ →'))));
+      v.append(hasHint?null:el('div',{class:'msg ng',id:'keikaXBlocked'},pl.blocked),backBar(el('a',{class:'btn light',href:'#p6'},'← 6 完成した書類へ')));return}
+    const what=el('div',{class:'card'},el('h3',{},'書き足す内容'));
+    what.append(el('p',{style:'margin:4px 0'},'新しいシート「',el('b',{id:'keikaXSheet'},pl.sheet),'」を、「一覧」のすぐ右に足します。今あるシートは変えません。'),
+      el('div',{class:'note',style:'margin-top:8px'},pl.head),
+      el('div',{class:'kprev',id:'keikaXFields'},pl.fields.filter(f=>f[1]).map(f=>f[0]+'：'+f[1]).join('\n')),
+      el('div',{class:'note',style:'margin-top:8px'},'本文の最初の'+pl.bodyFirst.length+'行：'),
+      el('div',{class:'kprev',id:'keikaXPrev'},pl.bodyFirst.join('\n')+(more>0?'\n…（ほか '+more+' 行）':'')));
+    v.append(what);
+    for(const w of pl.warnings)v.append(el('div',{class:'warnbox'},'⚠ '+w));
+    v.append(el('div',{class:'okbox'},'書き足す前に、いまの .xlsm の写しを、同じフォルダの「控え」に取ります。何も消しません。まだ何も書いていません。'),
+      el('div',{class:'note'},'書いたあと、Excelで開いて保存すると、「一覧」に写ります（パネルは一覧を書きません）。'));
+    const run=async()=>{await act(async()=>{const r=await post('/api/keika/xappend',{id:pl.id});msg('ok',r.ok+'\n控え：'+r.dir+'＼'+r.backup+'\n'+r.note);go('p6')},'書き足しています…')};
+    v.append(el('div',{class:'bar cleanbar'},el('button',{class:'btn light',id:'keikaXCancel',onclick:()=>{msg('info','やめました。何も書いていません。');go('p6')}},'やめる'),
+      el('button',{class:'btn primary',id:'keikaXRun',onclick:run},'書き足す')));
+  });
+}
+// ⑥ → 完成した第1表にカイポケの情報を入れる前の確認画面（改善19）
+function pHyo1Add(v,arg){
+  const i=arg.indexOf('/');const folder=arg.slice(0,i),name=arg.slice(i+1);
+  v.append(crumb('カイポケの情報を第1表に入れる',['6 完成した書類','p6']),el('h2',{},'カイポケの情報を第1表に入れる'),flashBox());
+  fetchInto(v,'/api/hyo1/preview',{folder,name},pl=>{
+    v.append(el('div',{class:'card',id:'hyo1Plan'},el('h3',{},pl.user||'（名前が分かりません）'),
+      el('div',{class:'form'},el('span',{},'第1表'),el('span',{style:'overflow-wrap:anywhere'},'2_完成＼'+pl.source),
+        el('span',{},'使うCSV'),el('span',{style:'overflow-wrap:anywhere'},pl.files?'カイポケCSV＼'+pl.files.split('・').join('、'):'（なし）'))));
+    if(pl.blocked){v.append(el('div',{class:'msg ng',id:'hyo1Blocked'},pl.blocked),backBar(el('span',{style:'display:flex;gap:8px'},el('a',{class:'btn light',href:'#p6'},'← 6 完成した書類へ'),el('a',{class:'btn light',id:'hyo1ToCsv',href:'#kaipoke'},'カイポケのCSVを入れる →'))));return}
+    const rows=pl.rows.map(r=>el('tr',{class:'h1row','data-cell':r.cell,'data-state':r.state},td('欄',r.label+'（'+r.cell+'）'),td('入れる内容',r.value||'—'),td('状態',el('span',{class:'chip '+(r.state==='入れる'?'g':r.state==='そのまま'?'':'w')},r.state),r.note?el('div',{class:'note',style:'margin-top:2px'},r.note):null)));
+    v.append(el('div',{class:'card'},el('h3',{},'入れる内容'),ntable(['欄','入れる内容','状態'],rows)));
+    for(const w of pl.warnings)v.append(el('div',{class:'warnbox'},'⚠ '+w));
+    if(pl.warnings.length)v.append(el('p',{class:'note'},'CSVを入れ直すときは、トップ画面の「そのほか」→ ',el('a',{href:'#kaipoke'},'カイポケのCSVを入れる'),' から。'));
+    if(!pl.nWrite){v.append(el('div',{class:'msg info',id:'hyo1None'},'入れる欄がありません。'),backBar(el('a',{class:'btn light',href:'#p6'},'← 6 完成した書類へ')));return}
+    v.append(el('div',{class:'okbox'},'書く前に、いまの第1表の写しを、2_完成の「控え」フォルダに取ります。入っている欄は変えません。何も消しません。まだ何も書いていません。'));
+    const run=async()=>{await act(async()=>{const r=await post('/api/hyo1/apply',{id:pl.id});msg('ok',r.ok+'\n控え：2_完成＼'+r.backup);go('p6')},'入れています…')};
+    v.append(el('div',{class:'bar cleanbar'},el('button',{class:'btn light',id:'hyo1Cancel',onclick:()=>{msg('info','やめました。何も書いていません。');go('p6')}},'やめる'),
+      el('button',{class:'btn primary',id:'hyo1Run',onclick:run},'入れる')));
+  });
+}
+// カイポケのCSVを入れる（改善20）：マスキング作業＼カイポケCSV に入れる。中身（名前など）は画面に出さない
+// サーバーの名前をそろえる（改善29 No.58）：調べる（見るだけ）→ チェックを付けた行だけ「名前をそろえる」
+const RN={rows:null,notes:[],res:null,truncated:false};
+function pRename(v){
+  v.append(crumb('サーバーの名前をそろえる'),el('h2',{},'サーバーの名前をそろえる'),el('p',{class:'lead'},'サーバーの利用者フォルダ（50音のフォルダの中・利用者（終了）も）を調べて、今の決まりと違う名前のファイルを一覧にします。調べるだけでは何も変えません。新しい名前（案）はその場で直せます。チェックを付けた行だけ、「名前をそろえる」を押したときに名前を変えます（消さない・上書きしない・同じ名前があれば変えない・Excelで開いているものは変えない。ファイルは今のフォルダの中で名前を変えるだけで、「元にした資料_…」のフォルダだけは「元にした資料」フォルダの中へ移します）。変える前後の名前は、その方のフォルダの「控え」に日時つきで残ります。'),flashBox());
+  v.append(el('div',{class:'bar',style:'justify-content:flex-start;gap:8px;flex-wrap:wrap'},el('button',{class:'btn primary',id:'rnScan',onclick:()=>act(async()=>{const r=await post('/api/rename/scan',{});RN.rows=r.rows;RN.notes=r.notes||[];RN.truncated=!!r.truncated;RN.res=null;msg('ok',r.rows.length?r.rows.length+'件見つかりました。':'今の決まりと違う名前のものは見つかりませんでした。')},'サーバーを調べています…')},RN.rows?'もう一度調べる':'サーバーを調べる')));
+  if(RN.res){const r=RN.res;v.append(el('div',{class:'okbox',id:'rnResult'},el('div',{},'✓ '+r.ok),...(r.done||[]).map(x=>el('div',{class:'note'},x.dir+'：'+x.from+' → '+x.to)),...(r.skipped||[]).map(x=>el('div',{class:'note',style:'color:var(--ng,#b00020)'},'変えなかった：'+x.dir+'：'+x.from+'（'+x.why+'）'))))}
+  if(!RN.rows)return;
+  RN.notes.forEach(n=>v.append(el('div',{class:'msg ng'},n)));
+  if(RN.truncated)v.append(el('div',{class:'msg ng'},'件数が多いので、途中までしか調べていません。名前をそろえたあと、もう一度調べてください。'));
+  if(!RN.rows.length)return;
+  const can=r=>r.kind==='book'?(!!(r.to||'').trim()&&!/～）|（～/.test(r.to)):(r.kind==='src'&&!r.blocked);
+  const cnt=el('span',{class:'note',id:'rnCount'});
+  const upd=()=>{const n=RN.rows.filter(r=>can(r)&&r.checked).length;cnt.textContent='チェック '+n+'件';const b=document.querySelector('#rnGo');if(b)b.disabled=!n};
+  const kindL={book:'ケアプランのブック',src:'元にした資料',keika:'支援経過（まとめの対象）'};
+  const list=el('div',{id:'rnList'});
+  RN.rows.forEach(r=>{
+    const cb=el('input',{type:'checkbox','data-rn':String(r.id),class:'rncb',onchange:e=>{r.checked=e.target.checked;upd()}});cb.checked=!!r.checked&&can(r);cb.disabled=!can(r);
+    let toIn=null;
+    const rsel=r.pre?el('select',{class:'rnreason','data-rn':String(r.id),style:'margin-bottom:6px;max-width:100%',onchange:e=>{const v=e.target.value;if(v==='')return;if(v==='other'){toIn.focus();return}r.to=r.pre+v+'）.xlsx';toIn.value=r.to;cb.disabled=!can(r);upd()}},el('option',{value:''},'理由を選んでください'),...['新規','認定更新','区分変更','サービス変更'].map(x=>el('option',{value:x},x)),el('option',{value:'other'},'そのほか（手で書く）')):null;
+    const to0=r.editable?el('input',{type:'text',class:'rnto','data-rn':String(r.id),value:r.to||'',style:'width:100%;box-sizing:border-box',oninput:e=>{r.to=e.target.value;cb.disabled=!can(r);if(!can(r)){cb.checked=false;r.checked=false}upd()}}):el('div',{class:'rnto-fixed'},r.to||'');
+    toIn=to0;const to=rsel?el('div',{},rsel,to0):to0;
+    list.append(el('div',{class:'card rnrow','data-rn':String(r.id),style:'margin:8px 0;padding:10px'},
+      el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},(r.kind==='keika'?null:cb),el('b',{},kindL[r.kind]||r.kind),el('span',{class:'note'},r.where)),
+      el('div',{style:'margin-top:6px;word-break:break-all'},el('span',{class:'note'},'今の名前：'),r.from),
+      el('div',{style:'margin-top:4px;word-break:break-all'},el('span',{class:'note'},r.kind==='keika'?'まとめ先：':'新しい名前（案）：'),to),
+      r.note?el('div',{class:'note',style:'margin-top:4px'+(/^要確認|同じ名前/.test(r.note)?';color:var(--ng,#b00020)':'')},r.note):null))});
+  v.append(el('div',{class:'bar',style:'justify-content:flex-start;gap:8px;flex-wrap:wrap'},
+    el('button',{class:'btn light small',id:'rnAll',onclick:()=>{RN.rows.forEach(r=>{if(can(r))r.checked=true});render()}},'全部チェックする'),
+    el('button',{class:'btn light small',id:'rnNone',onclick:()=>{RN.rows.forEach(r=>r.checked=false);render()}},'全部はずす'),cnt),list,
+    el('div',{class:'bar',style:'justify-content:flex-start'},el('button',{class:'btn primary',id:'rnGo',onclick:()=>{
+      const rows=RN.rows.filter(r=>can(r)&&r.checked);if(!rows.length)return;
+      if(!confirm(rows.length+'件の名前を変えます。削除はしません（「元にした資料_…」は「元にした資料」フォルダの中へ移します。ほかは名前を変えるだけです）。変える前後の名前は「控え」に残ります。よろしいですか？'))return;
+      act(async()=>{const r=await post('/api/rename/do',{rows:rows.map(x=>({kind:x.kind,root:x.root,rel:x.rel,sub:x.sub,from:x.from,to:x.to}))});RN.res=r;RN.rows=null;msg(r.skipped&&r.skipped.length?'ng':'ok',r.ok)},'名前を変えています…')}},'名前をそろえる')));
+  upd();setTimeout(upd,0);
+}
+function pKaipoke(v){
+  v.append(crumb('カイポケのCSVを入れる'),el('h2',{},'カイポケのCSVを入れる'),el('p',{class:'lead'},'カイポケから出した「利用者情報」と「認定情報」のCSVを入れます。入れたCSVは、6「完成した書類」の「カイポケの情報を第1表に入れる」で使います。このパソコンの中（マスキング作業＼カイポケCSV）にだけ置き、AIには渡しません。'),flashBox());
+  const inp=el('input',{type:'file',multiple:true,style:'display:none',accept:'.csv',onchange:e=>up(e.target.files)});
+  const drop=el('div',{class:'drop',id:'kpdrop'},el('div',{class:'big'},'ここにCSVをドラッグしてください'),el('div',{class:'sm'},'カイポケの「利用者情報」「認定情報」のCSV（.csv）　／　2つまとめて入れられます　／　月に1回、新しいものを入れてください'),el('div',{style:'margin-top:14px'},el('button',{class:'btn light small',id:'kppick',onclick:()=>inp.click()},'パソコンから選ぶ')),inp);
+  drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');up(e.dataTransfer.files)});
+  async function up(files){if(!files||!files.length)return;const fd=new FormData();for(const f of files)fd.append('files',f);
+    await act(async()=>{const r=await post('/api/kaipoke/upload',fd,true);const t=[];
+      if(r.saved.length)t.push(r.saved.length+'件を入れました：'+r.saved.map(x=>x.name+'（'+x.kind+'）').join('、'));
+      if(r.dup.length)t.push('同じCSVがすでに入っていたので入れませんでした：'+r.dup.join('、'));
+      if(r.rejected.length)t.push('入れられなかったファイル：'+r.rejected.map(x=>x.name+'（'+x.why+'）').join('、'));
+      msg(r.rejected.length||r.dup.length||!r.saved.length?'ng':'ok',t.join('\n')||'入れたファイルはありません。');render()},'CSVを入れています…')}
+  v.append(drop);
+  fetchInto(v,'/api/kaipoke/status',{},r=>{
+    v.append(el('div',{class:'card',id:'kpused'},el('h3',{},'第1表に使うCSV'),el('div',{class:'form'},
+      el('span',{},'利用者情報'),el('span',{style:'overflow-wrap:anywhere'},r.file1||'（ありません）'),
+      el('span',{},'認定情報'),el('span',{style:'overflow-wrap:anywhere'},r.file2||'（ありません）')),
+      el('p',{class:'note'},'同じ種類が2つ以上あるときは、更新日がいちばん新しいものを使います。')));
+    const ws=[...new Set([...(r.file1?[]:(r.problems1||[])),...(r.file2?[]:(r.problems2||[])),...(r.notes||[])])];
+    for(const w of ws)v.append(el('div',{class:'warnbox'},'⚠ '+w));
+    v.append(el('h3',{style:'margin-top:22px'},'カイポケCSV フォルダにあるCSV（'+r.files.length+'件）'));
+    if(!r.files.length)v.append(el('div',{class:'empty'},'まだ入っていません。'));
+    else v.append(ntable(['ファイル','種類','行数','更新日','使う','取り消し'],r.files.map(f=>{const cell=el('span',{});
+      // 入れたCSVを取り消す（ごみ箱へ。改善27の2）：押すと確かめの欄を出し、「はい」でごみ箱へ移す
+      const ask=()=>cell.replaceChildren(el('span',{class:'note'},'ごみ箱へ移しますか？ '),el('button',{class:'btn small danger kptrashyes',onclick:()=>act(async()=>{const x=await post('/api/kaipoke/trash',{name:f.name});msg('ok',x.ok)},'取り消しています…')},'はい'),el('button',{class:'btn small light',onclick:()=>cell.replaceChildren(btn)},'やめる'));
+      const btn=el('button',{class:'btn small light kptrash',onclick:ask},'取り消す');cell.append(btn);
+      return el('tr',{class:'kprow'},td('ファイル',f.name),td('種類',f.kind||el('span',{class:'chip w'},'分かりません')),td('行数',f.kind?String(f.rows):'—'),td('更新日',f.at),td('使う',f.used?el('span',{class:'chip g'},'使う'):el('span',{class:'note'},f.kind?'使わない（古い）':(f.why||'—'))),td('取り消し',cell))})));
+    v.append(el('p',{class:'note'},'古いCSVは消さずに残ります（新しいほうが使われます）。入れ間違えたCSVは「取り消す」でごみ箱へ移せます（ごみ箱から元に戻せます）。'),backBar());
+  });
+}
+// 支援経過のファイル（置き場所・今までの一覧を写し直す）
+const KF={user:''};let KRES=null;
+function pKeika(v){
+  v.append(crumb('支援経過のファイル'),el('h2',{},'支援経過のファイル'),el('p',{class:'lead'},'利用者ごとの 支援経過記録.xlsx・支援経過一覧.docx の置き場所です（マスキング作業＼支援経過＼氏名）。このパソコンの中だけにあり、AIには渡しません。'),flashBox());
+  const us=userSel(KF.user,x=>{KF.user=x;KRES=null;render()},'kf-user');
+  v.append(el('div',{class:'form',style:'margin-bottom:14px'},el('span',{},'利用者'),us));
+  if(!KF.user){v.append(el('div',{class:'empty'},'利用者を選んでください。'),backBar());return}
+  fetchInto(v,'/api/keika/info',{user:KF.user},r=>{
+    v.append(el('div',{class:'card'},el('h3',{},'置き場所'),el('div',{class:'note'},'マスキング作業＼'+r.folder),
+      r.files.length?ntable(['名前','更新日'],r.files.map(f=>el('tr',{},td('名前',f.name),td('更新日',f.mtime)))):el('div',{class:'note'},'（まだファイルはありません。書き足すときに様式から作ります）'),
+      r.backups?el('div',{class:'note',style:'margin-top:6px'},'控え：'+r.backups+'件（控え フォルダ）'):null,
+      el('div',{class:'bar',style:'justify-content:flex-start'},el('button',{class:'btn light small',onclick:()=>openIt('keikaDir',KF.user)},'フォルダを開く（エクスプローラー）'))));
+    const inp=el('input',{type:'file',accept:'.docx,.xlsx',multiple:true,style:'display:none',onchange:async e=>{const fs=e.target.files;if(!fs.length)return;const fd=new FormData();fd.append('user',KF.user);for(const f of fs)fd.append('files',f);
+      await act(async()=>{const x=await post('/api/keika/upload',fd,true);msg(x.rejected.length?'ng':'ok',(x.saved.length?'このフォルダに入れました：'+x.saved.join('、'):'')+(x.rejected.length?'　入れられなかったもの（Word・Excelだけ）：'+x.rejected.join('、'):''))},'入れています…')}});
+    const rw=el('div',{class:'card',id:'rewriteCard'},el('h3',{},'今までの一覧を写し直す（年を補う）'),
+      el('p',{class:'note',style:'margin-top:0'},'年が一部の件にしか書かれていない今の一覧（「（5.12　モニタ時）本文」の形）から、各件の頭に年入りの日付「R8.5.12（火）【モニタ時】」を付けた新しい一覧「支援経過一覧（年入り）.docx」を同じフォルダに作ります。元のファイルは書き換えません。'),
+      el('div',{class:'bar',style:'justify-content:flex-start'},el('button',{class:'btn light small',onclick:()=>inp.click()},'今の一覧（Word）をこのフォルダに入れる'),inp));
+    if(!r.docs||!r.docs.length)rw.append(el('div',{class:'note'},'このフォルダにWordがありません。上のボタンで、今の一覧を入れてください（コピーが入ります）。'));
+    else rw.append(ntable(['Word',''],r.docs.map(d=>el('tr',{},td('Word',d),el('td',{class:'ops'},el('button',{class:'btn primary small rewrite','data-name':d,onclick:()=>act(async()=>{KRES=await post('/api/keika/rewrite',{user:KF.user,name:d});msg('ok',KRES.ok)},'写し直しています…')},'写し直す'))))));
+    v.append(rw);
+    if(KRES){
+      const x=KRES;
+      v.append(el('div',{class:'card',id:'rewriteResult'},el('h3',{},'写し直した結果：'+x.name),
+        el('p',{style:'margin:4px 0'},'件の数 '+x.total+'件　／　年を補った件 '+x.supplied.length+'件　／　もとから年入りの件 '+x.kept+'件　／　日付を決められなかった件 '+x.undecided.length+'件'),
+        x.undecided.length?[el('h3',{style:'color:var(--warn)'},'日付を決められなかった件（'+x.undecided.length+'件）'),el('p',{class:'note',style:'margin-top:0'},'そのまま写してあります。新しい一覧を開いて、頭の日付を手で直してください。'),ntable(['番号','元の頭','理由'],x.undecided.map(u=>el('tr',{},td('番号',u.no),td('元の頭',u.before),td('理由',u.note))))]:null,
+        el('h3',{style:'margin-top:14px'},'年を補った件（'+x.supplied.length+'件）'),
+        x.supplied.length?ntable(['番号','元の頭','新しい頭','メモ'],x.supplied.map(u=>el('tr',{},td('番号',u.no),td('元の頭',u.before),td('新しい頭',u.after),td('メモ',u.note)))):el('div',{class:'note'},'ありません'),
+        el('p',{class:'note'},'中身を確かめたら、元の一覧を別の名前にしてから、新しい一覧の名前を「支援経過一覧.docx」に変えると、書き足し・切り出しに使えます（名前の変更はエクスプローラーで行ってください）。')));
+    }
+    v.append(backBar());
+  });
+}
+
+// ================= 組織図と進み具合（改善7・R8.10.1 暗い端末ふうに作り直し） =================
+// 読むだけの画面（/api/view what:'org'）。押すと orgGo でその画面へ飛ぶ。何も書かない。
+function goTitle(g){const p=g.split('/')[0];return {p4:'④ 届いた合格品へ',p5:'⑤ 要相談へ',p6:'⑥ 完成した書類へ',ai40:'40の中身を見る',shijidoc:'依頼の書き置きを読む'}[p]||''}
+function clkAttrs(go){return go?{role:'button',tabindex:'0',title:goTitle(go),onclick:e=>{e.stopPropagation();orgGo(go)},onkeydown:e=>{if(e.key==='Enter'){e.stopPropagation();orgGo(go)}}}:{}}
+const O4=['受付','作成中','判定','合格(40)'];
+// 進み具合の4段（受付→作成中→判定→合格(40)／相談(50)）。いまの依頼の段階から出す
+function oProg(m){
+  const st=(m.status||{}).state||'';
+  const js=m.jobs||[];
+  const j=js.find(x=>x.stage===0||x.stage===1)||js.find(x=>x.stage===2||x.stage<0);
+  let n=0,mode='',labels=O4.slice();
+  if(j){
+    if(j.stage===0)n=1;else if(j.stage===1)n=/判定/.test(j.state||'')?3:2;
+    else if(j.stage===2){n=4;mode='hold'}else if(j.stage===3)n=4;
+    else{n=4;mode='ng';labels[3]='相談(50)'}
+  }else if(js.length){n=4}
+  else if(/作業中/.test(st))n=2;
+  else if(/確認待ち/.test(st)){n=4;mode='hold'}
+  else if(/要相談/.test(st)){n=4;mode='ng';labels[3]='相談(50)'}
+  else if((m.items||[]).some(x=>x.kind==='consult')){n=4;mode='ng';labels[3]='相談(50)'}
+  return {n,mode,labels}
+}
+function oBar(m){
+  const p=oProg(m);
+  return [el('div',{class:'bar4',title:'進み具合 '+p.n+'/4'},...[0,1,2,3].map(i=>el('i',{class:i<p.n?(i===3&&p.mode?p.mode:'on'):''}))),
+    el('div',{class:'bar4l'},...p.labels.map((t,i)=>el('span',{class:i===Math.max(p.n-1,0)&&p.n>0?'here':''},t)))]
+}
+function oBoxState(m,shown){
+  const kind=/点検/.test(m.name)?'s-chk':/作業中/.test(shown)?'s-run':'s-wait';
+  return kind
+}
+function oBox(m,isBoss){
+  const st=m.status||{};
+  const hasConsult=(m.items||[]).some(x=>x.kind==='consult');
+  const shown=hasConsult&&st.state!=='作業中'?'要相談':(st.state||'待機中');
+  const working=/作業中/.test(shown);
+  const kind=isBoss?'s-boss':oBoxState(m,shown);
+  const js=m.jobs||[],its=m.items||[];
+  const first=js.find(x=>x.stage===0||x.stage===1)||js.find(x=>x.stage===2||x.stage<0)||its.find(x=>x.kind==='wait'||x.kind==='consult');
+  const go=first&&first.go;
+  const now=st.now||(first&&(first.user?first.user+' '+first.doc:first.title))||'';
+  const box=el('div',Object.assign({class:'obox '+kind+(go?' clk':''),id:isBoss?'org-leader':'org-'+m.key},clkAttrs(go)),
+    el('div',{class:'nm'},el('b',{},m.name),m.group?el('span',{class:'tag'},m.group):null,
+      el('span',{class:'st'},working?el('span',{class:'run'},'[',el('span',{class:'ospin'}),'] '):null,el('span',{class:'ostate'+(/確認待ち/.test(shown)?' hold':/要相談/.test(shown)?' ng':'')},shown))),
+    isBoss?null:el('div',{class:'d'},m.role),
+    el('div',{class:'row'},el('span',{class:'k'},'いま：'),now||'（なし）'),
+    st.next?el('div',{class:'row'},el('span',{class:'k'},'次：'),st.next):null,
+    isBoss?null:oBar(m));
+  if(!isBoss&&m.counts&&m.counts.length)box.append(el('div',{class:'d'},m.counts.map(([k,n])=>k+' '+n).join('　')));
+  if(js.length){
+    const lab=['受付待ち','作成中','確認待ち','完成'];
+    box.append(el('details',{class:'sub',open:js.some(j=>j.stage<=1)||null},el('summary',{},'仕事 '+js.length+'件'),
+      ...js.map(j=>el('div',Object.assign({class:'ojob'+(j.go?' clk':'')},clkAttrs(j.go)),el('b',{},j.user),' ',j.doc,'（'+j.month+'実施） ',el('span',{class:'ostate'+(j.stage===2?' hold':j.stage<0?' ng':'')},j.stage<0?'要相談':lab[j.stage]),j.go?el('span',{class:'arrow'},' →'):null,j.at?el('div',{class:'d'},j.at):null))));
+  }else if(its.length){
+    box.append(el('ul',{class:'oitems'},...its.map(x=>el('li',Object.assign({class:x.kind+(x.go?' clk':'')},clkAttrs(x.go)),x.title,x.go?el('span',{class:'arrow'},' →'):null,el('div',{class:'d'},x.note+(x.at?'　'+x.at:''))))));
+  }
+  if(st.updated)box.append(el('div',{class:'d',style:'margin-top:4px'},'記録：'+st.updated));
+  return box}
+// 係の箱を3つずつの段に並べ、統括からの幹・段の横線・箱へ下りる線・箱どうしの横線でつなぐ（R8.10.1）
+function oRows(ms){
+  const rows=[];for(let i=0;i<ms.length;i+=3)rows.push(ms.slice(i,i+3));
+  const wrap=el('div',{class:'otree'});
+  rows.forEach((rw,ri)=>{
+    const cells=rw.map(m=>el('div',{class:'ocell'},oBox(m,false)));
+    const n=cells.length,cw='((100% - 48px) / 3)';
+    if(ri===0){
+      // 1段目：統括から下りる幹・横線・各箱へ下りる線
+      const bar=el('div',{class:'obar',style:'left:calc('+cw+' / 2);right:calc(100% - ('+(n-1)+' * ('+cw+' + 24px) + '+cw+' / 2))'});
+      wrap.append(el('div',{class:'ovl'}),el('div',{class:'oline first'},bar,...cells));
+    }else{
+      // 2段目から：同じ列の上の箱と縦線でつなぐ（格子）
+      wrap.append(el('div',{class:'oline'},...cells));
+    }
+  });
+  return wrap;
+}
+function pOrg(v){
+  v.append(crumb('組織図と進み具合'),el('h2',{},'組織図と進み具合'));
+  const box=el('div',{});v.append(box);
+  const my=RID;let timer=null;
+  async function draw(){
+    clearTimeout(timer);let r;try{r=await post('/api/view',{what:'org'})}catch(e){if(my!==RID)return;box.replaceChildren(el('div',{class:'msg ng'},e.message));return}
+    if(my!==RID)return;
+    const L=r.leader||{};
+    const pend=r.members.flatMap(m=>(m.items||[]).filter(x=>x.kind==='wait'||x.kind==='consult').map(x=>[m,x]));
+    const askTxt=r.ask<0?'':r.ask===0?'　お願い: なし':'　お願い: '+r.ask+'件';
+    const ask=el('div',{class:'oask',id:'org-ask'},
+      el('h3',{},'佐藤さんの確認待ち '+r.waits+'件　要相談 '+r.openConsult+'件'+askTxt),
+      pend.length?el('ul',{class:'oitems'},...pend.map(([m,x])=>el('li',Object.assign({class:x.kind+(x.go?' clk':'')},clkAttrs(x.go)),m.name+'　'+x.title,x.go?el('span',{class:'arrow'},' →'):null,el('div',{class:'d'},x.note)))):el('div',{class:'d'},'いま確認をお願いしたいものはありません'),
+      el('div',{style:'margin-top:6px'},el('a',{href:'#p4'},'[④ 届いた合格品]'),'　',el('a',{href:'#p5'},'[⑤ 要相談]')));
+    const lgs=r.log||[];
+    const log=el('div',{class:'log',id:'org-log'},el('h3',{},'最近の出来事（新しい順 '+lgs.length+'行）'),
+      lgs.length?lgs.map(g=>el('div',Object.assign({class:'lg'+(g.go?' clk':'')},clkAttrs(g.go)),el('span',{class:'t'},g.at),el('span',{class:'w'},g.who),el('span',{class:'m'},g.msg),el('span',{class:'r '+g.res},'['+({ok:'済み',run:'作業中',wait:'受付',consult:'相談',error:'エラー'}[g.res]||g.res)+']'))):el('div',{class:'d'},'まだ出来事がありません'));
+    const nwork=r.members.filter(m=>/作業中/.test((m.status||{}).state||'')).length+(/作業中/.test(L.state||'')?1:0);
+    box.replaceChildren(
+      el('div',{class:'orgd'},
+        el('div',{class:'ot'},el('span',{},el('b',{},'進み具合'),'　30秒ごとに自動で新しくなります'),el('span',{},r.at)),
+        el('div',{class:'legend'},el('span',{style:'color:var(--o-boss)'},'■ 司令塔'),el('span',{style:'color:var(--o-run)'},'■ 作業中'),el('span',{style:'color:var(--o-wait)'},'■ 待機'),el('span',{style:'color:var(--o-chk)'},'■ 点検役'),el('span',{},'押すとその画面へ移ります。利用者は記号のまま表示')),
+        ask,
+        oBox(Object.assign({key:'leader',name:'統括リーダー',role:'窓口。係に仕事を割り振り、できたものを判定する',items:[],jobs:[]},{status:L}),true),
+        oRows(r.members),
+        r.hasManual?null:el('div',{class:'warnbox'},'00_指示＼係の状況.md が見つかりません。自動で分かることだけ表示しています。'),
+        log,
+        el('div',{class:'stline',id:'org-status'},'依頼 ',el('b',{},r.nreq),'件・作業中 ',el('b',{},nwork),'・確認待ち ',el('b',{},r.waits),'・要相談 ',el('b',{},r.openConsult))),
+      el('p',{class:'note'},'出どころ：00_指示の依頼・係の状況.md・パネル改善リスト・エラー記録、40・50のフォルダ（読むだけで、何も書き換えません）'),
+      backBar(el('button',{class:'btn light',onclick:draw},'今すぐ新しくする')));
+    timer=setTimeout(()=>{if(my===RID)draw()},30000);
+  }
+  draw();
+}
+
+// ================= サーバーへ保存（改善8） =================
+const GYOU=[['あ','ぁあぃいぅうぇえぉおゔ'],['か','かがきぎくぐけげこごゕゖ'],['さ','さざしじすずせぜそぞ'],['た','ただちぢっつづてでとど'],['な','なにぬねの'],['は','はばぱひびぴふぶぷへべぺほぼぽ'],['ま','まみむめも'],['や','ゃやゅゆょよ'],['わ','らりるれろゎわゐゑをん']];
+function gyouOf(r){const c=(r||'')[0];if(!c)return '';for(const [g,cs] of GYOU){if(cs.includes(c))return g}return ''}
+function pSrv(v,folder){
+  v.append(crumb('サーバーへ保存',['6 完成した書類','p6']),el('h2',{},'サーバーへ保存'),flashBox());
+  fetchInto(v,'/api/server/preview',{folder},pl=>{
+    const card=el('div',{class:'card'},el('h3',{},pl.label));
+    v.append(card);
+    let readIn=null,pathEl=null;
+    if(pl.problem){card.append(el('div',{class:'msg ng'},pl.problem))}
+    else if(pl.found.length===1){const f=pl.found[0];
+      card.append(el('div',{class:'srvrow'},el('span',{class:'k'},'保存先'),el('span',{class:'path'},f.dir)),
+        ...(f.where==='ended'?[el('div',{class:'warnbox'},'この方のフォルダは「支援が終わった方」の置き場所にあります。そこへ保存します。')]:[]))}
+    else{
+      readIn=el('input',{placeholder:'例：さとう',style:'width:10em',maxlength:'20'});readIn.value=pl.reading||'';
+      pathEl=el('span',{class:'path'});
+      const upd=()=>{const r=readIn.value.trim();pathEl.textContent=pl.setting.base+'\\'+(gyouOf(r)||'（行）')+'\\'+(r||'（ふりがな）')+'_'+pl.newName};upd();readIn.addEventListener('input',upd);
+      card.append(el('div',{class:'warnbox'},'この方の利用者フォルダは、まだありません。名字のふりがな（ひらがな）を入れると、あ・か・さ…の行のフォルダの中に新しく作って保存します（ら行の方は「わ」に入ります）。'),
+        el('div',{class:'srvrow'},el('span',{class:'k'},'名字のふりがな'),readIn),
+        el('div',{class:'srvrow'},el('span',{class:'k'},'作るフォルダ'),pathEl))}
+    const canApp=f=>f.append&&!f.append.blocked;
+    // 改善28：足せる1日分は、チェックではなく1つの選び（足す／別のファイル／保存しない）
+    const boxes=pl.files.map(f=>{if(canApp(f)){const ch=f.append.choices;
+      const sel=ch?el('select',{class:'appmode appchoose','data-name':f.name},el('option',{value:'skip'},'どのファイルに足すか、選んでください（選ばなければ足しません）'),...ch.map(c=>el('option',{value:'append:'+c.target,disabled:!!c.blocked},'「'+c.target+'」に足す'+(c.blocked?'（足せません）':''))),el('option',{value:'new'},'別のファイルとして保存')):el('select',{class:'appmode','data-name':f.name},(f.merge&&!f.merge.blocked?el('option',{value:'merge'},'新しい1冊「'+f.merge.book+'」にまとめて、この日を足す'):null),el('option',{value:'append'},f.append.kind==='create'?'「'+f.append.bookName+'」を新しく作る':(f.append.kind==='book'?'「'+f.append.target+'」にこの日のシートを足す':(f.merge&&!f.merge.blocked?'今までどおり、前の1日分「'+f.append.target+'」にシートを足す':'「'+f.append.target+'」にシートを足す'))),el('option',{value:'new'},'別のファイルとして保存（今あるExcelは変えない）'),el('option',{value:'skip'},'保存しない'));
+      sel.value=ch?'skip':(f.checked?((f.merge&&!f.merge.blocked)?'merge':'append'):'skip');f.modeSel=sel;return {f,cb:{get checked(){return sel.value!=='skip'}},sel}}
+      const cb=el('input',{type:'checkbox'});cb.checked=f.checked;return {f,cb}});
+    // 改善28 No.50：支援経過（1日分）で、足す先の「支援経過1日分_…xlsx」があるとき
+    const appBox=({f,cb})=>{const a=f.append;if(!a)return null;
+      if(a.blocked)return el('div',{class:'warnbox srvapp srvappng','data-name':f.name},'⚠ この1日分は、サーバーのExcelに足せません：'+a.blocked+'。',a.dup?null:'上のチェックを入れると、今までどおり別のファイルとして保存します（今あるExcelは変えません）。');
+      if(a.choices){const info=el('div',{class:'appinfo'});
+        const show=()=>{const v=f.modeSel.value,c=a.choices.find(x=>'append:'+x.target===v);
+          if(c)info.replaceChildren(el('div',{},'今あるシートは変えずに、この日のシートを足します（足す前に控えに写しを取ります）。'),el('div',{},'足す先：「',el('b',{class:'apptarget'},c.target),'」　足すシート：「',el('b',{class:'appsheet'},c.sheet),'」（'+a.head+'）'),c.kind==='book'?el('div',{},'「一覧」の一番上にも、この日を1行足します。'):null,el('div',{class:'note'},'シートの並び：'+c.place+'。今あるシート：'+(c.sheets||[]).join('、')),(c.warnings||[]).map(w=>el('div',{class:'note'},'⚠ '+w)));
+          else info.replaceChildren(el('div',{class:'note'},v==='new'?'今あるExcelは変えずに、別のファイルとして保存します。':'足さずに、保存もしません。'))};
+        f.modeSel.addEventListener('change',show);show();
+        return el('div',{class:'okbox srvapp srvmulti','data-name':f.name,style:'font-weight:400'},el('div',{},'この方のフォルダに、支援経過'+(a.kind==='book'?'':'1日分')+'のExcelが '+a.found.length+' 個あります。どれに足すか選んでください：'+a.found.join('・')),
+          a.choices.filter(c=>c.blocked).map(c=>el('div',{class:'note'},'⚠ '+c.target+'：'+c.blocked)),info)}
+      if(a.kind==='create')return el('div',{class:'okbox srvapp srvcreate','data-name':f.name,style:'font-weight:400'},
+        el('div',{},'この方のフォルダには、支援経過のExcelがまだありません。「',el('b',{class:'apptarget'},a.target),'」を新しく作り、この日のシート「',el('b',{class:'appsheet'},a.sheet),'」（'+a.head+'）を入れます。'),
+        el('div',{class:'note'},'1枚目のシート「一覧」に、この日を1行書き写します。サーバーでは何も消さず、上書きもしません。'),
+        (a.warnings||[]).map(w=>el('div',{class:'note'},'⚠ '+w)));
+      const mg=f.merge&&!f.merge.blocked?f.merge:null;
+      const legacyBox=el('div',{class:'srvlegacy'},
+        el('div',{},'今あるシートは変えずに、この日のシートを足します（足す前に控えに写しを取ります）。'),
+        el('div',{},'足す先：「',el('b',{class:'apptarget'},a.target),'」　足すシート：「',el('b',{class:'appsheet'},a.sheet),'」（'+a.head+'）'),
+        a.kind==='book'?el('div',{},'「一覧」の一番上にも、この日を1行足します。'):null,
+        el('div',{class:'note'},'シートの並び：'+a.place+'。今あるシート：'+(a.sheets||[]).join('、')),
+        (a.warnings||[]).map(w=>el('div',{class:'note'},'⚠ '+w)));
+      if(!mg)return el('div',{class:'okbox srvapp','data-name':f.name,style:'font-weight:400'},legacyBox,f.merge&&f.merge.blocked?el('div',{class:'note srvmergeng'},'「支援経過_氏名.xlsx」にまとめることはできません：'+f.merge.blocked):null);
+      // 改善29 No.57：今ある1日分のExcelを「支援経過_氏名.xlsx」にまとめる（上の選びで「まとめて足す」／「今までどおり足す」を選ぶ。チェックは使わない）
+      const mbox=el('div',{class:'srvmerge1'},
+        el('div',{class:'mergetitle'},'今ある1日分のExcel（'+mg.sheets+'件のシート）を『'+mg.book+'』にまとめます。'),
+        el('div',{},'中のシートを新しい1冊へ移し、「一覧」も作ります（古い日付から順に一覧へ。一覧は新しい日が上）。この日のシート「',el('b',{class:'mergesheet'},mg.sheet),'」（'+a.head+'）も入ります。'),
+        el('div',{class:'note'},'古いファイル（'+mg.legacy+'）は消さずに、利用者フォルダの「控え」へ移します。'),
+        (mg.warnings||[]).map(w=>el('div',{class:'note'},'⚠ '+w)));
+      const nobox=el('div',{class:'note srvnoapp'});
+      const sync=()=>{const v=f.modeSel.value;mbox.style.display=v==='merge'?'':'none';legacyBox.style.display=v==='append'?'':'none';nobox.style.display=(v==='new'||v==='skip')?'':'none';nobox.textContent=v==='new'?'今あるExcelは変えずに、別のファイルとして保存します。':'保存しません。'};
+      f.modeSel.addEventListener('change',sync);sync();
+      return el('div',{class:'okbox srvapp srvmergewrap','data-name':f.name,style:'font-weight:400'},mbox,legacyBox,nobox)};
+    card.append(el('h3',{style:'margin-top:14px'},'保存するファイル'),
+      el('div',{class:'srvfiles'},...boxes.flatMap(bx=>{const {f,cb}=bx;return [el('label',{class:'srvfile'},bx.sel||cb,el('span',{},f.name),(()=>{if(!/\(\d+\)\.[A-Za-z]+$/.test(f.name))return null;const sp=el('span',{class:'note dupnote'},'　→ サーバーには「'+f.name.replace(/\(\d+\)(\.[A-Za-z]+)$/,'$1')+'」の名前で保存');if(bx.sel&&f.append&&!f.append.blocked){const u=()=>{sp.style.display=bx.sel.value==='new'?'':'none'};bx.sel.addEventListener('change',u);u()}return sp})(),f.at?el('span',{class:'note'},'　元に戻した日時：'+f.at):null),appBox(bx)]})),
+      boxes.some(b=>canApp(b.f))?null:el('div',{class:'okbox'},'サーバーでは何も消しません・上書きもしません。同じ名前のファイルがあれば、日付を付けた別の名前で保存します（前のものはそのまま）。'));
+    // 元にした資料（改善27）：あとから「何をもとに作ったか」が分かるように、置き換える前の元のファイルも残す
+    const sboxes=(pl.srcs||[]).map(f=>{const cb=el('input',{type:'checkbox',class:'srcck'});cb.checked=f.checked;return {f,cb}});
+    card.append(el('h3',{style:'margin-top:14px'},'元にした資料（置き換える前の元のファイル）'),
+      sboxes.length?el('div',{class:'srvfiles srcfiles'},...sboxes.map(({f,cb})=>el('label',{class:'srvfile'},cb,el('span',{},f.name)))):el('div',{class:'note'},'この仕事の元のファイルは見つかりませんでした（片づけた・この版より前に渡した など）。'),
+      sboxes.length?el('div',{class:'note',id:'srcnote'},'「'+pl.srcRoot+'＼'+pl.srcDir+'」に入れます。同じ中身がもうあれば、二重には入れません。'):null,
+      pl.srcProblem?el('div',{class:'warnbox'},'⚠ '+pl.srcProblem):null,
+      pl.srcMiss?el('div',{class:'warnbox srcmiss'},'⚠ この仕事でAIに渡した資料のうち '+pl.srcMiss+' 件は、元のファイルが「1_元データ＼処理済み」に見つかりませんでした（片づけた・この版より前に置き換えた など）。必要なら、元の書類を手でサーバーへ入れてください。'):null);
+    // 改善28 No.52：前の決まりでできた「元にした資料_…」を「元にした資料」の中へ移す（確認画面で知らせてから）
+    const mv=pl.moves||[];let mvCb=null;
+    if(mv.length){const can=mv.filter(m=>!m.conflict).length;
+      mvCb=can?el('input',{type:'checkbox',id:'movecb'}):null;if(mvCb)mvCb.checked=true;
+      card.append(el('div',{class:'warnbox srvmoves',id:'srvmoves'},el('div',{},'前の「元にした資料_…」のフォルダが '+mv.length+' 個あります。'+(can?'保存のときに、「'+pl.srcRoot+'」の中へ移します（中身は触りません。前の名前は「控え」に残します）。':'')),
+        el('ul',{},...mv.map(m=>el('li',{},m.from+(m.conflict?'　→ 「'+pl.srcRoot+'」の中に同じ名前があるので、移さずにそのまま残します':'　→ '+pl.srcRoot+'＼'+m.to)))),
+        mvCb?el('label',{style:'display:block;margin-top:6px'},mvCb,' 移す'):null))}
+    const out=el('div',{});
+    const save=async()=>{
+      const files=boxes.filter(b=>b.cb.checked).map(b=>b.f.name),srcs=sboxes.filter(b=>b.cb.checked).map(b=>b.f.name);
+      if(!files.length&&!srcs.length){alert('保存するファイルを選んでください');return}
+      try{busy(true,'サーバーへ保存しています…');
+        const modes={},merge={};for(const b of boxes){if(!b.cb.checked||!b.f.append)continue;modes[b.f.name]=b.f.append.blocked?'new':(b.f.modeSel?b.f.modeSel.value:'append');
+          if(modes[b.f.name]==='merge'){modes[b.f.name]='append';merge[b.f.name]=true}}
+        const r=await post('/api/server/save',{id:pl.id,files,srcs,reading:readIn?readIn.value.trim():'',modes,merge,noMove:!!mvCb&&!mvCb.checked});
+        v.querySelectorAll('.srvbar button').forEach(b=>b.disabled=true);
+        out.replaceChildren(el('div',{class:'rdone'+(r.failed.length?' ng':'')},
+          el('div',{class:'rh'},r.failed.length?'⚠ 保存しました（一部できなかったものがあります）':'✓ サーバーへ保存しました'),
+          el('div',{},'保存先：',el('b',{},r.dir),r.created?'（フォルダを新しく作りました）':''),
+          r.saved.length?el('ul',{},...r.saved.map(x=>el('li',{},x.saveAs?x.saveAs+'（'+x.note+'）':x.name))):null,
+          (r.appended||[]).length?el('div',{class:'appdone'},'支援経過（1日分）をExcelに入れたもの：',el('ul',{},...r.appended.map(x=>el('li',{class:'appli'+(x.kind?' '+x.kind:'')},
+            x.kind==='create'?'「'+x.target+'」を新しく作りました（一覧と、シート「'+x.sheet+'」。'+x.head+'）'
+            :x.kind==='merge'?'今ある1日分のExcel（'+x.merged+'件のシート）を「'+x.target+'」にまとめ、シート「'+x.sheet+'」を足しました（'+x.head+'）。古いファイルは「'+(x.moved||'')+'」へ移しました'
+            :'「'+x.target+'」にシート「'+x.sheet+'」を足しました'+(x.kind==='book'?'（「一覧」の一番上にも1行足しました）':'')+'（'+x.head+'）　控え：'+x.backup,
+            x.warn?el('div',{class:'rw'},'⚠ '+x.warn):null)))):null,
+          r.skipped.length?el('div',{},'保存しなかったもの：',...r.skipped.map(x=>el('div',{class:'note'},'・'+x.name+'（'+x.note+'）'))):null,
+          (r.moved||[]).length?el('div',{class:'movedone'},'前の「元にした資料_…」を、「'+r.srcRoot+'」の中へ移しました：',el('ul',{},...r.moved.map(m=>el('li',{},m.from+' → '+r.srcRoot+'＼'+m.to)))):null,
+          (r.moveSkipped||[]).length?el('div',{class:'rw'},'移さずに残したもの（同じ名前がある・移せなかった）：'+r.moveSkipped.map(m=>m.from).join('／')):null,
+          (r.srcSaved||[]).length?el('div',{class:'srcdone'},'元にした資料（「'+r.srcRoot+'＼'+r.srcDir+'」のフォルダ）：',el('ul',{},...r.srcSaved.map(x=>el('li',{},x.saveAs?x.saveAs+'（'+x.note+'）':x.name)))):null,
+          (r.srcSkipped||[]).length?el('div',{},'元にした資料で入れなかったもの（すでにあり）：',...r.srcSkipped.map(x=>el('div',{class:'note'},'・'+x.name+'（'+x.note+'）'))):null,
+          r.failed.length?el('div',{class:'rw'},'保存できなかったもの：'+r.failed.map(x=>x.name+'（'+x.note+'）').join('／')):null,
+          el('div',{style:'margin-top:8px'},el('a',{class:'btn light small',href:'#p6'},'← ⑥ 完成した書類へ'))));
+        out.scrollIntoView({block:'center'});
+      }catch(e){out.replaceChildren(el('div',{class:'msg ng'},e.message))}finally{busy(false)}};
+    v.append(out,el('div',{class:'bar srvbar'},el('a',{class:'btn light',href:'#p6'},'やめる'),el('button',{class:'btn primary',disabled:!!pl.problem,onclick:save},'保存する')));
+    // 置き場所を変える
+    const b1=el('input',{style:'width:100%'});b1.value=pl.setting.base;const b2=el('input',{style:'width:100%'});b2.value=pl.setting.ended;
+    v.append(el('details',{class:'reg'},el('summary',{},'保存先の置き場所を変える（ふだんは使いません）'),
+      el('div',{class:'form',style:'margin-top:10px'},el('span',{},'利用者'),b1,el('span',{},'支援が終わった方'),b2),
+      el('div',{class:'bar'},el('button',{class:'btn light small',onclick:()=>act(async()=>{const r=await post('/api/server/setting',{base:b1.value,ended:b2.value});msg('ok',r.ok)},'変えています…')},'この置き場所にする'))));
+  });
+}
+load().catch(e=>{$('#view').append(el('div',{class:'msg ng'},'画面を読み込めませんでした：'+e.message+'（AI作業パネルを起動し直してください）'))});
+</script>
+</body>
+</html>
