@@ -541,7 +541,7 @@ func (m *masker) dashAddrSuspects(s string, have []suspect) []suspect {
 	var out []suspect
 	// 市区町村のある住所（今までの規則で見る）と重なるものは見ない
 	var covered [][2]int
-	for _, ix := range reAddr.FindAllStringIndex(view, -1) {
+	for _, ix := range addrFindAll(view) {
 		covered = append(covered, [2]int{ix[0], ix[1]})
 	}
 	for _, ix := range reAddrDash.FindAllStringIndex(view, -1) {

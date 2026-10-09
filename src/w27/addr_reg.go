@@ -71,7 +71,7 @@ func addrCanon(s string) string {
 
 // addrCoreLoc: 住所の番地までの部分（市区町村のある形、なければ市区町村のない形）。番地がなければ nil
 func addrCoreLoc(s string) []int {
-	if loc := reAddr.FindStringIndex(s); loc != nil {
+	if loc := addrFind(s); loc != nil {
 		return loc
 	}
 	return reAddrNC.FindStringIndex(s)
@@ -298,7 +298,7 @@ func placeStart(s string, i, a int) bool {
 // addrCores: 番地までの住所らしき部分（市区町村のある形・ない形）
 func addrCores(s string) [][2]int {
 	var cores [][2]int
-	for _, ix := range reAddr.FindAllStringIndex(s, -1) {
+	for _, ix := range addrFindAll(s) {
 		cores = append(cores, [2]int{skipAddrHead(s, ix[0], ix[1]), ix[1]})
 	}
 	for _, ix := range reAddrNC.FindAllStringIndex(s, -1) {
@@ -497,7 +497,7 @@ func skipAddrHead(s string, st, en int) int {
 				}
 				i += sz
 			}
-			if reAddr.MatchString(s[i:en]) || reAddrNC.MatchString(s[i:en]) {
+			if addrFind(s[i:en]) != nil || reAddrNC.MatchString(s[i:en]) {
 				return i
 			}
 		}

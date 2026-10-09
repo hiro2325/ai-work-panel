@@ -72,7 +72,78 @@ var (
 	reRoomOnly = regexp.MustCompile(`^[A-Za-zＡ-Ｚａ-ｚ]?[-－‐]?[0-9０-９]{1,4}(?:号室|号|室)?$`)
 	reRoomTail = regexp.MustCompile(`[A-Za-zＡ-Ｚａ-ｚ'’]?[-－‐]?[0-9０-９]{1,4}(?:号室|号|室)?$`)
 	reAddrOrig = regexp.MustCompile(`[市区町村郡都道府県丁番]|[0-9０-９]+[-－ー‐−][0-9０-９]+[-－ー‐−][0-9０-９]+`)
+	// ひらがなを含む町名（ひばりが丘・みどりの・あざみ野）の住所。市区町村名ははっきりした形だけ
+	// （都道府県から・かなを含む実在の名前・漢字2字以上＋市区町村。「当市」「地区」は入れない）。
+	// 文の言葉まで住所にしないよう、町名の部分は kanaTownOK で確かめる
+	reAddrKanaTown = regexp.MustCompile(`(?:` + addrPref + addrMuniPrefKana + `|(?:` + addrPref + `)?(?:` + addrKanaMuni + `|[\p{Han}ヶケ]{2,5}[市区町村郡]))([\p{Han}\p{Katakana}\p{Hiragana}ーヶケノ]{1,10})` + addrNum)
 )
+
+// 町名に入っていたら、文の言葉とみなす語（「大和市のサービスを週1-2回」「当地区のみなさん1-2名」）
+var kanaTownNG = strings.Fields(`を から まで より さん さま ちゃん くん など ほど では には とは`)
+
+// kanaTownOK: ひらがなを含む町名として認めるか
+//   - の 以外のひらがなを含む（含まなければ reAddr で見ている）
+//   - 文の言葉（kanaTownNG）を含まない
+//   - 助詞らしい字（は・に・で・へ・と・も・や・が・か）で終わらない（「横浜市に1-2回」）
+//   - 助詞らしい字（は・に・で・へ・と・も・や）のすぐ後ろが漢字・カタカナでない（「当市は週1-2回」）。「ひばりが丘」の が はよい
+func kanaTownOK(town string) bool {
+	rs := []rune(town)
+	hira := false
+	for _, r := range rs {
+		if unicode.Is(unicode.Hiragana, r) && r != 'の' {
+			hira = true
+		}
+	}
+	if !hira {
+		return false
+	}
+	for _, w := range kanaTownNG {
+		if strings.Contains(town, w) {
+			return false
+		}
+	}
+	if strings.ContainsRune("はにでへともやがか", rs[len(rs)-1]) {
+		return false
+	}
+	for i := 0; i+1 < len(rs); i++ {
+		if strings.ContainsRune("はにでへともや", rs[i]) && (unicode.Is(unicode.Han, rs[i+1]) || unicode.Is(unicode.Katakana, rs[i+1])) {
+			return false
+		}
+	}
+	return true
+}
+
+// addrFindAll: 市区町村のある住所（reAddr と、ひらがなの町名の形）の場所。重なるときは先に始まる・長いほう
+func addrFindAll(s string) [][]int {
+	locs := reAddr.FindAllStringIndex(s, -1)
+	for _, ix := range reAddrKanaTown.FindAllStringSubmatchIndex(s, -1) {
+		if kanaTownOK(s[ix[2]:ix[3]]) {
+			locs = append(locs, ix[:2])
+		}
+	}
+	sort.Slice(locs, func(a, b int) bool {
+		if locs[a][0] != locs[b][0] {
+			return locs[a][0] < locs[b][0]
+		}
+		return locs[a][1] > locs[b][1]
+	})
+	var out [][]int
+	for _, l := range locs {
+		if len(out) > 0 && l[0] < out[len(out)-1][1] {
+			continue
+		}
+		out = append(out, l)
+	}
+	return out
+}
+
+// addrFind: 最初の住所（市区町村のある形）の場所。なければ nil
+func addrFind(s string) []int {
+	if all := addrFindAll(s); len(all) > 0 {
+		return all[0]
+	}
+	return nil
+}
 
 // 建物名の目印
 var buildingWords = strings.Fields(`ハイツ マンション コーポ レジデンス ハウス アパート メゾン パレス コート ヒルズ ビル ヴィラ ハイム テラス タワー ガーデン パーク フラット ドミール カーサ シャトー グラン ロイヤル プラザ ステージ ホームズ 荘 寮 団地 住宅 棟 館 苑`)
@@ -342,7 +413,7 @@ func (m *masker) addrSuspects(s string) []suspect {
 	var out []suspect
 	view, _ := m.placeView(s)
 	var covered [][2]int
-	for _, ix := range reAddr.FindAllStringIndex(view, -1) {
+	for _, ix := range addrFindAll(view) {
 		core := view[ix[0]:ix[1]]
 		if strings.Contains(core, "【") {
 			continue
