@@ -111,6 +111,8 @@ func (s *panelServer) intakeWrap(how string, f apiFunc) apiFunc {
 					h = "ドラッグ"
 				case len(vs) > 0 && vs[0] == "pick":
 					h = "パソコンから選ぶ"
+				case len(vs) > 0 && vs[0] == "sample":
+					h = "試し用の書類（samples）"
 				}
 			}
 		}

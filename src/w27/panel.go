@@ -151,9 +151,10 @@ func runPanel(p *paths) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.page)
 	mux.HandleFunc("/api/state", s.api(s.state))
-	mux.HandleFunc("/api/passed/poll", s.api(s.passedPoll)) // ④の自動更新（改善28 No.49）
-	mux.HandleFunc("/api/download", s.api(s.downloadFiles))   // ⑥ 完成した書類をダウンロードフォルダへ写す（改善28 No.55）
+	mux.HandleFunc("/api/passed/poll", s.api(s.passedPoll))          // ④の自動更新（改善28 No.49）
+	mux.HandleFunc("/api/download", s.api(s.downloadFiles))          // ⑥ 完成した書類をダウンロードフォルダへ写す（改善28 No.55）
 	mux.HandleFunc("/api/upload", s.api(s.intakeWrap("", s.upload))) // 入れ方の記録（改善12 No.42）
+	mux.HandleFunc("/api/samples/file", s.api(s.sampleFile))         // 試し用の書類（run_source.bat から起動したときだけ）
 	mux.HandleFunc("/api/mask", s.api(s.mask))
 	mux.HandleFunc("/api/namelist", s.api(s.namelist))
 	mux.HandleFunc("/api/send", s.api(s.send))
@@ -433,8 +434,9 @@ func (s *panelServer) state(r *http.Request) (any, error) {
 	jobs, doneOther := s.doneJobs(cb)
 	srcInfo, stageInfo := s.intakeInfo()
 	return map[string]any{
-		"srcInfo":    srcInfo,   // 入れた日時・入れ方（改善12 No.42）
-		"stageInfo":  stageInfo, // 置き換え済みへ移っても引き継ぐ
+		"srcInfo":    srcInfo,      // 入れた日時・入れ方（改善12 No.42）
+		"samples":    sampleList(), // 試し用の書類（run_source.bat から起動したときだけ）
+		"stageInfo":  stageInfo,    // 置き換え済みへ移っても引き継ぐ
 		"doneJobs":   jobs,
 		"fixDraft":   s.readFixDraft(),
 		"doneOther":  doneOther,

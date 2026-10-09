@@ -151,6 +151,11 @@ textarea{font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid v
 .kaizen{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 18px 14px;margin-top:18px}
 .kaizen textarea{min-height:80px}
 .paste{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-top:18px}
+.samples{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:14px 18px;margin-top:14px}
+.samples h3{margin:0 0 8px;font-size:16px}
+.sample-card{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 12px;margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--main-soft)}
+.sample-card[draggable=true]{cursor:grab}
+.sample-card .fn{overflow-wrap:anywhere;min-width:0}
 .paste h3{margin:0 0 8px;font-size:18px}
 .dirs .card summary{cursor:pointer}
 .orig-warn{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:8px;padding:10px 14px;margin-bottom:14px}
@@ -608,14 +613,16 @@ function p1(v){
   const drop=el('div',{class:'drop'},el('div',{class:'big'},'ここにファイルをドラッグしてください'),el('div',{class:'sm'},'Excel（.xlsx）・Word（.docx）・PDF（FAX・スキャン）　／　まとめて何個でも入れられます'),el('div',{style:'margin-top:14px'},el('button',{class:'btn light small',onclick:()=>inp.click()},'パソコンから選ぶ')),inp);
   drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});
   drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
-  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');up(e.dataTransfer.files,'drag')});
+  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');const sn=e.dataTransfer.getData(SAMPLE_MIME);if(sn){putSamples([sn]);return}up(e.dataTransfer.files,'drag')});
+  // 試し用の書類（samples）：中身をもらって、ドラッグと同じ /api/upload で入れる
+  async function putSamples(names){const fs=[];try{busy(true,'試し用の書類を読んでいます…');for(const n of names){const r=await post('/api/samples/file',{name:n});const b=atob(r.b64),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);fs.push(new File([u],r.name))}}catch(e){busy(false);msg('ng',e.message);await load();return}busy(false);await up(fs,'sample')}
   async function up(files,how){if(!files||!files.length)return;const fd=new FormData();for(const f of files)fd.append('files',f);fd.append('how',how||'drag');
     await act(async()=>{const r=await post('/api/upload',fd,true);let t=r.saved.length+'件を入れました。';if(r.dup.length)t+='　同じファイルがすでに入っていたので入れませんでした：'+r.dup.join('、');if(r.rejected.length)t+='　入れられなかったファイル（形式が対象外）：'+r.rejected.join('、');msg(r.rejected.length||r.dup.length?'ng':'ok',t)},'ファイルを入れています…')}
   // 前に置き換えて、まだ渡していないファイルが残っているときの知らせ（改善 No.41）
   const stageWarn=S.src.length&&S.stage.length?el('div',{class:'warnbox',id:'stagewarn'},'⚠ 前に置き換えたファイルが '+S.stage.length+' 件、まだ渡されずに残っています：'+S.stage.join('、')+'　別の方の分なら取り消してください（下の「渡す前のファイル」の「✕ 取り消す」）。'):null;
   // 入れた日時と入れ方（改善12 No.42）
   const fi=(m,n)=>{const x=(m||{})[n];return x?el('span',{class:'fi'},'入れた日時 '+x.at+'　／　入れ方：'+x.how):null};
-  v.append(crumb('1 資料を入れる'),el('h2',{},'1　資料を入れる'),flashBox(),asideBox(),stageWarn,drop,keikaTodayBox(),pasteBox(),keikaExtractBox(),
+  v.append(crumb('1 資料を入れる'),el('h2',{},'1　資料を入れる'),flashBox(),asideBox(),stageWarn,drop,sampleBox(putSamples),keikaTodayBox(),pasteBox(),keikaExtractBox(),
     el('div',{id:'srclist'},el('h3',{class:'flist-h'},'まだ置き換えていないファイル・保留のファイル（'+S.src.length+'件）'),
       S.src.length?el('div',{class:'files'},...S.src.map(n=>el('div',{},el('span',{class:'fn'},n,fi(S.srcInfo,n)),el('span',{class:'fr'},el('span',{class:'kind'},kindOf(n)),el('button',{class:'x',onclick:()=>removeFile('src',n)},'✕ 取り消す'))))):el('p',{class:'note'},'まだ入っていません。')),
     S.stage.length?el('div',{id:'stagelist'},el('h3',{class:'flist-h'},'渡す前のファイル（置き換え済み・まだAIに渡していません）（'+S.stage.length+'件）'),
@@ -645,6 +652,23 @@ function noteCounter(getText,sfx){
     else{box.textContent='';box.style.color=''}
     return n}
   box.upd=upd;upd();return box}
+// 試し用の書類（samples）の欄。run_source.bat から起動したときだけ（S.samples が空なら出さない）
+const SAMPLE_MIME='application/x-masktool-sample';
+function sampleBox(putSamples){
+  const ns=S.samples||[];if(!ns.length)return null;
+  const icon=n=>({'.xlsx':'📊','.docx':'📄','.pdf':'📠','.txt':'📝'})[(n.match(/\.[^.]+$/)||[''])[0].toLowerCase()]||'📎';
+  const isTxt=n=>/\.txt$/i.test(n);
+  const files=ns.filter(n=>!isTxt(n));
+  const toPaste=async n=>{try{const r=await post('/api/samples/file',{name:n});PASTE.title='担当者会議（試し用）';PASTE.text=r.text;render(true);const b=$('.paste');if(b)b.scrollIntoView({block:'center'})}catch(e){alert(e.message)}};
+  const card=n=>{const c=el('div',{class:'sample-card',draggable:isTxt(n)?'false':'true',title:isTxt(n)?'':'上の枠へドラッグすると入ります'},el('span',{class:'fn'},icon(n)+' '+n),
+      isTxt(n)?el('button',{class:'btn light small',onclick:()=>toPaste(n)},'貼り付け欄に入れる'):el('button',{class:'btn light small',onclick:()=>putSamples([n])},'入れる'));
+    if(!isTxt(n))c.addEventListener('dragstart',e=>{e.dataTransfer.setData(SAMPLE_MIME,n);e.dataTransfer.effectAllowed='copy'});
+    return c};
+  return el('div',{class:'samples',id:'samplebox'},el('h3',{},'試し用の書類（samples）'),
+    el('p',{class:'note',style:'margin-top:0'},'架空の人物・住所だけの書類です。カードを上の枠へドラッグするか「入れる」を押すと、1_元データ に入ります（samples フォルダの元のファイルはそのままです）。この欄は run_source.bat から起動したときだけ出ます。'),
+    ...ns.map(card),
+    files.length>1?el('div',{class:'bar'},el('span'),el('button',{class:'btn primary small',onclick:()=>putSamples(files)},files.length+'つまとめて入れる')):null);
+}
 function pasteBox(){
   const MAX=200000;
   const title=el('input',{placeholder:'例：担当者会議 R8.9.27',style:'width:100%',maxlength:'60',oninput:e=>PASTE.title=e.target.value});title.value=PASTE.title;
