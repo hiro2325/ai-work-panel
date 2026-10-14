@@ -203,6 +203,20 @@
 ### もう一度はじめから試すとき
 `kadai_masking\` の中の `対応表\`（氏名一覧・記号対応表）などを消すと、はじめての状態に戻ります（`.gitkeep` は残してください）。
 
+### 動画の撮り方（自動操作）
+上の手順（登録 → ① → ② 橙の仕分け → ③ → AI 役が 40 に置く → ④ → ⑥ → 成果物を Excel・Word で開く）を、[Playwright](https://playwright.dev/) で自動操作して mp4 に撮れます（約2分20秒）。
+```
+cd demo
+npm install
+node record.mjs --reset
+```
+- できた動画：`demo\videos\panel_demo_日時.mp4`（Git には上げません）
+- `--reset`：撮る前に、課題用フォルダ（`kadai_masking`・`kadai_ai`・`kadai_server`）の中身を `demo\_退避\日時\` へ移します（消しません）。中身が残っていると、付けない場合は止まります。
+- パネルは `run_source.bat` から起動し、撮る前に「場所：」が `kadai_masking` であることを確かめます。違えば何もせずに止まります。
+- ブラウザはパソコンの Chrome を使います。mp4 への変換に使う ffmpeg は `demo` の中にだけ入ります。
+- 成果物を開く場面では、**Excel・Word が画面に開きます。撮っている約30秒は、パソコンを触らないでください**（画面の範囲を撮るため、上に重なった通知なども写ります）。Excel・Word がないときは、この場面を飛ばします。
+- `--show` で撮っている画面を出す、`--fast` で待ち時間を短くする（試し用）、`--office-only` で成果物を開く場面だけを撮る（試し用）。
+
 ---
 
 ## 4. 設計上の判断
@@ -256,7 +270,8 @@
 ```
 kadai_panel/
 ├─ run_source.bat        起動用（練習用フォルダに向けて go run する）
-├─ samples/              動作確認用の架空の書類（Excel 1つ・Word 1つ）
+├─ samples/              動作確認用の架空の書類（Excel・Word・FAX の PDF・文字起こし）
+├─ demo/                 パネルを自動操作して動画に撮るスクリプト（record.mjs・office_show.ps1）
 ├─ src/w27/              ソース（Go・パネルの HTML・様式のひな形）
 │   ├─ main.go             起動・フォルダの準備・置き換え／元に戻すの本体
 │   ├─ panel.go / panel.html  ブラウザの画面

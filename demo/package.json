@@ -1,0 +1,14 @@
+{
+  "name": "panel-demo",
+  "private": true,
+  "description": "AI作業パネルを課題用フォルダで自動操作して、動画（mp4）に撮る",
+  "type": "module",
+  "scripts": {
+    "record": "node record.mjs"
+  },
+  "dependencies": {
+    "ffmpeg-static": "5.2.0",
+    "jszip": "3.10.1",
+    "playwright-core": "1.63.0"
+  }
+}

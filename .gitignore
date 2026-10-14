@@ -52,3 +52,13 @@ $RECYCLE.BIN/
 .vscode/
 .idea/
 *.swp
+
+# ---- 動画撮影（demo）：ライブラリ・動画・退避した中身は上げない
+/demo/node_modules/
+/demo/videos/
+/demo/_退避/
+*.mp4
+*.webm
+
+# ---- Playwright の道具（MCP）が作るフォルダ
+/.playwright-mcp/
