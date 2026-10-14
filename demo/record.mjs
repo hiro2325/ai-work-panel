@@ -305,7 +305,8 @@ async function scenario(page, url) {
   }
 
   // ① 資料を入れる：試し用の書類のカードをドラッグ
-  await caption(page, "① 資料を入れる", "試し用の書類のカードを、上の枠へドラッグします", 2000);
+  await moveTo(page, page.locator("#samplebox h3"));
+  await caption(page, "① 資料を入れる", "下の「試し用の書類」の欄にあるカードを、上の枠へドラッグして入れます", 3200);
   const drop = page.locator(".drop").first();
   for (const n of ["サンプル_フェイスシート.xlsx", "サンプル_支援経過記録.docx"]) {
     const card = page.locator(".sample-card", { hasText: n });
@@ -315,6 +316,8 @@ async function scenario(page, url) {
     await page.locator(".drop").first().scrollIntoViewIfNeeded();
     await sleep(1200);
   }
+  await moveTo(page, page.locator(".drop").first());
+  await caption(page, "ふだんは、エクスプローラーからもドラッグできます", "パソコンの中の Excel・Word・PDF を、同じ枠へドラッグして入れます", 3500);
   await moveTo(page, page.locator("#srclist"));
   await caption(page, "2つの書類が「1_元データ」に入りました", "", 2000);
 
